@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Be Our Camera Crew — About</title>
+<meta name="description" content="Everyone's the camera crew. Pool every guest's point of view into one shared event gallery." />
+<style>
+  :root{
+    --text:#37352f; --gray:#787774; --faint:#9b9a97;
+    --bg:#ffffff; --callout:#f7f6f3; --line:#ededec; --code:#f1f1ef;
+    --blue:#2383e2; --green:#448361; --accent:#cde000;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,"Apple Color Emoji",Arial,sans-serif;
+    font-size:16px; line-height:1.65; -webkit-font-smoothing:antialiased;
+  }
+  .cover{ height:200px; background:linear-gradient(110deg,#0e0e10 0%,#23230f 55%,#3a3a12 100%); position:relative; }
+  .cover::after{ content:""; position:absolute; inset:0; opacity:.5;
+    background:radial-gradient(circle at 18% 120%, rgba(215,255,62,.45), transparent 45%); }
+  .wrap{ max-width:720px; margin:0 auto; padding:0 24px 120px; }
+  .icon{ font-size:64px; line-height:1; margin-top:-48px; position:relative; filter:drop-shadow(0 6px 16px rgba(0,0,0,.18)); }
+  h1{ font-size:40px; font-weight:700; letter-spacing:-0.02em; margin:14px 0 4px; }
+  .sub{ color:var(--gray); font-size:18px; margin:0 0 8px; }
+  .meta{ color:var(--faint); font-size:14px; display:flex; gap:14px; flex-wrap:wrap; padding:10px 0 4px; border-bottom:1px solid var(--line); margin-bottom:8px; }
+  h2{ font-size:24px; font-weight:650; letter-spacing:-0.01em; margin:42px 0 6px; }
+  h3{ font-size:18px; font-weight:600; margin:26px 0 4px; }
+  p{ margin:8px 0; }
+  a{ color:var(--blue); text-decoration:none; border-bottom:1px solid rgba(35,131,226,.35); }
+  a:hover{ background:rgba(35,131,226,.08); }
+  strong{ font-weight:650; }
+  hr{ border:none; border-top:1px solid var(--line); margin:34px 0; }
+  code{ background:var(--code); border-radius:4px; padding:2px 6px; font-size:85%;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#c0341d; }
+  ul,ol{ padding-left:26px; margin:8px 0; }
+  li{ margin:5px 0; }
+  .callout{ display:flex; gap:12px; background:var(--callout); border-radius:8px; padding:16px 16px; margin:18px 0; }
+  .callout .emo{ font-size:20px; line-height:1.4; }
+  .callout p{ margin:0; }
+  .callout.tip{ background:#edf3ec; }
+  .callout.warn{ background:#faf3dd; }
+  table{ border-collapse:collapse; width:100%; margin:16px 0; font-size:15px; }
+  th,td{ border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top; }
+  th{ background:#fbfbfa; font-weight:600; }
+  details{ border-top:1px solid var(--line); padding:10px 2px; }
+  details:last-of-type{ border-bottom:1px solid var(--line); }
+  summary{ cursor:pointer; font-weight:550; list-style:none; display:flex; gap:8px; align-items:center; }
+  summary::-webkit-details-marker{ display:none; }
+  summary::before{ content:"▸"; color:var(--faint); transition:transform .15s ease; }
+  details[open] summary::before{ transform:rotate(90deg); }
+  details p{ color:var(--gray); padding-left:16px; }
+  blockquote{ margin:18px 0; padding:2px 0 2px 16px; border-left:3px solid var(--text); font-size:19px; }
+  .steps{ list-style:none; padding:0; counter-reset:s; }
+  .steps li{ counter-increment:s; position:relative; padding:12px 0 12px 44px; border-bottom:1px solid var(--line); }
+  .steps li::before{ content:counter(s); position:absolute; left:0; top:12px; width:28px; height:28px;
+    border-radius:7px; background:#1d1d1b; color:#e9ffa0; font-size:14px; font-weight:600;
+    display:grid; place-items:center; }
+  .steps li b{ display:block; }
+  .steps li span{ color:var(--gray); font-size:15px; }
+  .foot{ color:var(--faint); font-size:14px; margin-top:48px; padding-top:18px; border-top:1px solid var(--line); }
+  .pill{ display:inline-block; background:#1d1d1b; color:#e9ffa0; border-radius:999px; padding:2px 10px; font-size:13px; font-weight:600; }
+  .tags{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0; }
+  .tag{ background:var(--code); border-radius:6px; padding:3px 9px; font-size:13px; color:var(--gray); }
+</style>
+</head>
+<body>
+<div class="cover"></div>
+<main class="wrap">
+  <div class="icon">🎥</div>
+  <h1>Be Our Camera Crew</h1>
+  <p class="sub">One event. Every point of view. Pooled into a single shared gallery.</p>
+  <div class="meta">
+    <span>📍 Event photo sharing</span>
+    <span>🤝 Hosts &amp; guests</span>
+    <span>🧠 Self-hosted AI</span>
+    <span class="pill">Live</span>
+  </div>
+
+  <div class="callout">
+    <span class="emo">💡</span>
+    <p><strong>The one-liner:</strong> Everyone at an event captures the night from their own seat.
+    BOCC pools every guest's point of view into one gallery, so you relive the whole thing from
+    every angle, not just your own.</p>
+  </div>
+
+  <h2>The problem</h2>
+  <blockquote>You came home with 40 photos. The night actually had four thousand.</blockquote>
+  <p>Every guest shot the same event from a different seat, and all of it scatters across camera
+  rolls no one ever shares. The full story existed. It just never landed in one place.</p>
+
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li><b>Host drops a QR</b><span>Create an event in seconds. Print it, beam it, share the link.</span></li>
+    <li><b>Guests join</b><span>No account. A name and a quick consent tap, and they are crew.</span></li>
+    <li><b>Everyone shoots their POV</b><span>Every guest's angle on the same moment, captured at once.</span></li>
+    <li><b>It all pools</b><span>One live gallery, the whole night from every point of view, updating as it runs.</span></li>
+    <li><b>Find your photos</b><span>A tap on a face, or one selfie, surfaces the shots you are in.</span></li>
+  </ol>
+
+  <h2>What's inside</h2>
+  <table>
+    <tr><th>Feature</th><th>What it does</th></tr>
+    <tr><td>🖼️ Pooled POV gallery</td><td>Every guest's camera roll in one living, event-scoped gallery. The core of the product.</td></tr>
+    <tr><td>🙂 Find my photos</td><td>One selfie surfaces every frame you appear in. A handy feature, not the whole point.</td></tr>
+    <tr><td>🔎 Search in plain words</td><td>"People near the cake." "Golden hour." Semantic and OCR search, no tags.</td></tr>
+    <tr><td>📍 Venue geofencing</td><td>Only accept photos shot at the venue. Keep the gallery on-site.</td></tr>
+    <tr><td>🎚️ Per-guest caps</td><td>Five, fifteen, or unlimited. A cap forces curation so every shot earns its place.</td></tr>
+    <tr><td>✨ Auto-highlights</td><td>The sharpest, best-lit frames pulled into a recap reel automatically.</td></tr>
+  </table>
+
+  <div class="callout tip">
+    <span class="emo">🔐</span>
+    <p><strong>Consent, by design.</strong> Faces are biometric data. Consent is part of the join
+    flow, not buried in a policy, so every guest opts in before a single face is processed.
+    GDPR and BIPA grade, from day one.</p>
+  </div>
+
+  <h2>Who it's for</h2>
+  <h3>Hosts</h3>
+  <ul>
+    <li>Create from web or phone, full control over every setting</li>
+    <li>Live stats: crew joined, photos pooled, faces found</li>
+    <li>Moderation queue, expiry, and one-tap export of the album</li>
+  </ul>
+  <h3>Guests</h3>
+  <ul>
+    <li>Join in one scan, no app store, no password</li>
+    <li>See the whole night from every other guest's angle</li>
+    <li>One selfie, then download every photo you are in</li>
+  </ul>
+
+  <h2>Under the hood</h2>
+  <p>The AI runs on a self-hosted <strong>Immich</strong> engine behind our own backend, pointed
+  at storage you control. Face detection, semantic search, and OCR happen on infrastructure you
+  can hold, not a black box you rent.</p>
+  <div class="tags">
+    <span class="tag">Next.js web</span>
+    <span class="tag">Expo mobile</span>
+    <span class="tag">NestJS API</span>
+    <span class="tag">Postgres + pgvector</span>
+    <span class="tag">Immich engine</span>
+  </div>
+
+  <h2>FAQ</h2>
+  <details>
+    <summary>Do guests need to install an app?</summary>
+    <p>No. Guests scan a QR and join in the browser with just a name and a consent tap. A native
+    app exists for a richer experience, but it is never required to join, shoot, or browse.</p>
+  </details>
+  <details>
+    <summary>Is this just face recognition?</summary>
+    <p>No. The product is the pooled point-of-view gallery. Face matching is one convenience
+    feature on top, and it only runs after the guest consents.</p>
+  </details>
+  <details>
+    <summary>Where do the photos live?</summary>
+    <p>On a self-hosted Immich engine pointed at storage you control, behind our backend. Your
+    photos stay yours; nothing depends on a third-party photo cloud.</p>
+  </details>
+  <details>
+    <summary>What kinds of events does it suit?</summary>
+    <p>Weddings, parties, birthdays, sports and tournaments, concerts, and trips. Event-type
+    presets set sensible defaults for caps, geofencing, and video.</p>
+  </details>
+
+  <hr />
+  <p class="foot">Be Our Camera Crew. One shared roll, every angle.<br />
+  Want the technical setup? See the project README.</p>
+</main>
+</body>
+</html>

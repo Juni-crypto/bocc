@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BOCC - Web App</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style type="text/tailwindcss">
+  @theme {
+    --color-ink:#050505; --color-surface:#0E0E10; --color-surface2:#161619;
+    --color-line:rgba(255,255,255,0.08); --color-lime:#D7FF3E; --color-coral:#FF6B5E;
+    --font-display:"Space Grotesk", -apple-system, "SF Pro Display", system-ui, sans-serif;
+    --font-body:"Hanken Grotesk", -apple-system, system-ui, sans-serif;
+  }
+</style>
+<style>
+  :root{ --ease:cubic-bezier(0.32,0.72,0,1); }
+  *{ -webkit-font-smoothing:antialiased; }
+  body{ background:#050505; font-family:"Hanken Grotesk", -apple-system, system-ui, sans-serif; overflow-x:hidden; }
+  .font-display{ font-family:"Space Grotesk", -apple-system, "SF Pro Display", system-ui, sans-serif; }
+
+  /* radial mesh orbs */
+  .mesh{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .mesh::before,.mesh::after{ content:""; position:absolute; border-radius:9999px; filter:blur(120px); opacity:.18; }
+  .mesh::before{ width:560px; height:560px; background:#D7FF3E; top:-180px; left:-120px; }
+  .mesh::after{ width:520px; height:520px; background:#FF6B5E; bottom:-160px; right:-120px; opacity:.14; }
+
+  /* fixed film grain */
+  .grain{ position:fixed; inset:0; z-index:50; pointer-events:none; opacity:.04; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  /* double-bezel */
+  .bezel{ background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:2rem; padding:6px; }
+  .bezel-core{ background:#0E0E10; border-radius:calc(2rem - 6px); box-shadow:inset 0 1px 1px rgba(255,255,255,0.06); }
+
+  /* viewfinder corner brackets */
+  .vf{ position:relative; }
+  .vf::before,.vf::after{ content:""; position:absolute; width:20px; height:20px; border-color:#D7FF3E; z-index:5; }
+  .vf::before{ top:14px; left:14px; border-top:2px solid; border-left:2px solid; }
+  .vf::after{ bottom:14px; right:14px; border-bottom:2px solid; border-right:2px solid; }
+
+  .masonry{ column-count:4; column-gap:16px; }
+  @media(max-width:1100px){ .masonry{ column-count:3; } }
+  @media(max-width:700px){ .masonry{ column-count:2; } }
+  .masonry>*{ break-inside:avoid; margin-bottom:16px; border-radius:1rem; overflow:hidden; position:relative; }
+  .masonry img{ transition:transform .9s var(--ease), filter .9s var(--ease); width:100%; display:block; }
+  .masonry>*:hover img{ transform:scale(1.05); }
+
+  .rec{ animation:rec 1.4s steps(2,end) infinite; }
+  @keyframes rec{ 50%{ opacity:.2; } }
+
+  ::selection{ background:#D7FF3E; color:#050505; }
+
+  /* magnetic CTA */
+  .cta{ transition:transform .4s var(--ease), filter .4s var(--ease); }
+  .cta:active{ transform:scale(.97); }
+  .cta .ico{ transition:transform .5s var(--ease); }
+  .cta:hover .ico{ transform:translate(3px,-2px) scale(1.06); }
+
+  /* scroll reveal */
+  .reveal{ opacity:0; transform:translateY(40px); filter:blur(8px); }
+  .reveal.in{ opacity:1; transform:none; filter:none; transition:all .9s var(--ease); }
+
+  .tabbtn{ transition:all .4s var(--ease); }
+  .tabbtn.active{ background:#D7FF3E; color:#050505; }
+  .screen{ display:none; }
+  .screen.show{ display:block; }
+  ::-webkit-scrollbar{ width:0; }
+
+  /* form controls */
+  .tg{ width:46px; height:26px; border-radius:999px; background:rgba(255,255,255,0.12); position:relative; cursor:pointer; transition:background .3s var(--ease); flex:none; }
+  .tg::after{ content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:999px; background:#fff; transition:transform .3s var(--ease); }
+  .tg.on{ background:#D7FF3E; }
+  .tg.on::after{ transform:translateX(20px); background:#050505; }
+  .seg{ display:flex; gap:4px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:999px; padding:4px; }
+  .seg button{ flex:1; padding:7px 10px; border-radius:999px; font-size:13px; color:rgba(255,255,255,0.55); transition:all .3s var(--ease); }
+  .seg button.on{ background:#D7FF3E; color:#050505; font-weight:600; }
+  .track{ height:6px; border-radius:999px; background:rgba(255,255,255,0.1); position:relative; }
+  .track .fill{ position:absolute; left:0; top:0; bottom:0; border-radius:999px; background:#D7FF3E; }
+  .track .knob{ position:absolute; top:50%; width:18px; height:18px; border-radius:999px; background:#fff; transform:translate(-50%,-50%); box-shadow:0 2px 8px rgba(0,0,0,.4); }
+  .step{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; color:rgba(255,255,255,0.45); transition:all .3s var(--ease); }
+  .step.on{ background:rgba(215,255,62,0.08); color:#fff; }
+  .step .dot{ width:26px; height:26px; border-radius:999px; display:grid; place-items:center; font-size:12px; font-weight:600; background:rgba(255,255,255,0.08); flex:none; }
+  .step.on .dot{ background:#D7FF3E; color:#050505; }
+  .step.done .dot{ background:rgba(215,255,62,0.25); color:#D7FF3E; }
+</style>
+</head>
+<body class="text-white/90">
+<div class="mesh"></div>
+<div class="grain"></div>
+
+<!-- ====== FLOATING ISLAND NAV ====== -->
+<div class="fixed top-0 inset-x-0 z-40 flex justify-center pointer-events-none">
+  <header class="pointer-events-auto mt-6 px-2 py-2 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-2xl flex items-center gap-1 shadow-[0_8px_40px_rgba(0,0,0,0.5)]">
+    <div class="flex items-center gap-2 pl-3 pr-2">
+      <div class="w-7 h-7 rounded-full bg-lime grid place-items-center"><div class="w-2.5 h-2.5 rounded-full bg-ink rec"></div></div>
+      <span class="font-display font-bold tracking-tight">BOCC</span>
+    </div>
+    <div class="w-px h-5 bg-white/10 mx-1"></div>
+    <button onclick="show('landing',this)" class="tabbtn active px-3.5 py-1.5 rounded-full text-sm">Home</button>
+    <button onclick="show('create',this)" class="tabbtn px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white">Create</button>
+    <button onclick="show('host',this)" class="tabbtn px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white">Live</button>
+    <button onclick="show('gallery',this)" class="tabbtn px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white">Gallery</button>
+    <button onclick="show('search',this)" class="tabbtn px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white">Search</button>
+    <button onclick="show('person',this)" class="tabbtn px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white">Me</button>
+  </header>
+</div>
+
+<main class="relative z-10 max-w-[1240px] mx-auto px-6">
+
+<!-- ============ LANDING ============ -->
+<section id="landing" class="screen show pt-36 pb-28">
+  <div class="grid lg:grid-cols-2 gap-16 items-center">
+    <div>
+      <div class="reveal inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium bg-white/[0.04] border border-white/10 text-white/60 mb-7">
+        <span class="w-1.5 h-1.5 rounded-full bg-coral rec"></span> REC · live at your event
+      </div>
+      <h1 class="reveal font-display font-bold text-[5.2rem] leading-[0.9] tracking-[-0.03em]">
+        Everyone's<br>the <span class="text-lime">camera<br>crew.</span>
+      </h1>
+      <p class="reveal text-white/55 text-xl mt-8 max-w-md leading-relaxed">
+        Scan a QR, drop your 15 best shots, and the whole night pools into one gallery.
+        Then AI finds <span class="text-white">every photo you're in</span> - from a single selfie.
+      </p>
+      <div class="reveal flex gap-3 mt-10">
+        <button onclick="show('host')" class="cta group bg-lime text-ink font-semibold pl-6 pr-2 py-2 rounded-full flex items-center gap-3">
+          Start an event
+          <span class="ico w-9 h-9 rounded-full bg-ink/10 grid place-items-center text-lg">↗</span>
+        </button>
+        <button onclick="show('gallery')" class="cta px-6 py-3.5 rounded-full bg-white/[0.04] border border-white/10 hover:bg-white/[0.07]">See a live gallery</button>
+      </div>
+      <div class="reveal flex items-center gap-8 mt-12 text-sm text-white/40">
+        <div><span class="block text-white font-display text-3xl font-semibold">1</span>shared roll</div>
+        <div><span class="block text-white font-display text-3xl font-semibold">∞</span>guests</div>
+        <div><span class="block text-white font-display text-3xl font-semibold">0</span>photos missed</div>
+      </div>
+    </div>
+    <!-- hero collage in double-bezel -->
+    <div class="reveal bezel vf">
+      <div class="bezel-core p-3 overflow-hidden">
+        <div class="masonry" style="column-count:2;column-gap:12px">
+          <div><img src="img/p1.svg"></div>
+          <div><img src="img/p2.svg"></div>
+          <div><img src="img/p3.svg"></div>
+          <div><img src="img/p4.svg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- how it works -->
+  <div class="mt-40">
+    <p class="reveal text-[10px] uppercase tracking-[0.2em] text-lime mb-3">The shoot</p>
+    <h2 class="reveal font-display text-4xl font-semibold mb-12 tracking-tight">Four taps to the whole night</h2>
+    <div class="grid md:grid-cols-4 gap-5">
+      <div class="reveal bezel"><div class="bezel-core p-6 h-full"><div class="text-lime font-display text-4xl font-bold">01</div><h3 class="font-semibold mt-4 text-lg">Host drops a QR</h3><p class="text-white/45 text-sm mt-1.5">Create the event, print or beam the code.</p></div></div>
+      <div class="reveal bezel"><div class="bezel-core p-6 h-full"><div class="text-lime font-display text-4xl font-bold">02</div><h3 class="font-semibold mt-4 text-lg">Guests scan &amp; join</h3><p class="text-white/45 text-sm mt-1.5">No account. Name + a quick consent tap.</p></div></div>
+      <div class="reveal bezel"><div class="bezel-core p-6 h-full"><div class="text-lime font-display text-4xl font-bold">03</div><h3 class="font-semibold mt-4 text-lg">Add 10-15 shots</h3><p class="text-white/45 text-sm mt-1.5">A cap keeps the gallery all keepers.</p></div></div>
+      <div class="reveal bezel"><div class="bezel-core p-6 h-full"><div class="text-lime font-display text-4xl font-bold">04</div><h3 class="font-semibold mt-4 text-lg">Find your photos</h3><p class="text-white/45 text-sm mt-1.5">One selfie → every frame you appear in.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CREATE EVENT ============ -->
+<section id="create" class="screen pt-36 pb-28">
+  <p class="reveal text-[10px] uppercase tracking-[0.2em] text-lime mb-3">New event</p>
+  <h2 class="reveal font-display text-5xl font-bold mb-10 tracking-tight">Set up your shoot</h2>
+
+  <div class="grid lg:grid-cols-[230px_1fr_300px] gap-6 items-start">
+
+    <!-- stepper rail -->
+    <div class="reveal bezel lg:sticky lg:top-28">
+      <div class="bezel-core p-3">
+        <div class="step done"><span class="dot">✓</span><span class="text-sm font-medium">Basics</span></div>
+        <div class="step on"><span class="dot">2</span><span class="text-sm font-medium">Capture rules</span></div>
+        <div class="step"><span class="dot">3</span><span class="text-sm font-medium">Location</span></div>
+        <div class="step"><span class="dot">4</span><span class="text-sm font-medium">AI features</span></div>
+        <div class="step"><span class="dot">5</span><span class="text-sm font-medium">Access</span></div>
+        <div class="step"><span class="dot">6</span><span class="text-sm font-medium">Review</span></div>
+      </div>
+    </div>
+
+    <!-- option cards -->
+    <div class="space-y-5">
+      <!-- Basics -->
+      <div class="reveal bezel"><div class="bezel-core p-6">
+        <h3 class="font-display text-lg font-semibold mb-4">Basics</h3>
+        <label class="block text-sm text-white/50 mb-1.5">Event name</label>
+        <input class="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-lime transition mb-4" value="Aisha &amp; Dev, Sangeet">
+        <label class="block text-sm text-white/50 mb-2">Event type</label>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button class="rounded-full px-4 py-1.5 text-sm bg-lime text-ink font-semibold">Wedding</button>
+          <button class="rounded-full px-4 py-1.5 text-sm bg-white/[0.04] border border-white/10 text-white/60">Birthday</button>
+          <button class="rounded-full px-4 py-1.5 text-sm bg-white/[0.04] border border-white/10 text-white/60">Corporate</button>
+          <button class="rounded-full px-4 py-1.5 text-sm bg-white/[0.04] border border-white/10 text-white/60">Sports</button>
+          <button class="rounded-full px-4 py-1.5 text-sm bg-white/[0.04] border border-white/10 text-white/60">Concert</button>
+          <button class="rounded-full px-4 py-1.5 text-sm bg-white/[0.04] border border-white/10 text-white/60">Travel</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-sm text-white/50 mb-1.5">Starts</label><input class="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 outline-none text-white/80" value="Jun 28, 6:00 PM"></div>
+          <div><label class="block text-sm text-white/50 mb-1.5">Venue</label><input class="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 outline-none text-white/80" value="The Leela, Jaipur"></div>
+        </div>
+      </div></div>
+
+      <!-- Capture rules -->
+      <div class="reveal bezel" style="border-color:rgba(215,255,62,0.3)"><div class="bezel-core p-6">
+        <h3 class="font-display text-lg font-semibold mb-1">Capture rules</h3>
+        <p class="text-white/40 text-sm mb-5">Control how much each guest can add.</p>
+
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-sm">Photos per guest</label>
+          <span class="font-display font-semibold text-lime">15</span>
+        </div>
+        <div class="track mb-5"><div class="fill" style="width:55%"></div><div class="knob" style="left:55%"></div></div>
+        <div class="flex justify-between text-[11px] text-white/30 -mt-3 mb-5"><span>5</span><span>10</span><span>15</span><span>20</span><span>30</span><span>∞</span></div>
+
+        <div class="divide-y divide-white/5">
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Allow video clips</p><p class="text-xs text-white/40">Up to 30s each</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Live capture only</p><p class="text-xs text-white/40">No camera-roll uploads</p></div><div class="tg"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Auto-collapse duplicates</p><p class="text-xs text-white/40">Burst shots grouped</p></div><div class="tg on"></div></div>
+        </div>
+        <label class="block text-sm text-white/50 mt-4 mb-2">Upload window</label>
+        <div class="seg"><button>During event</button><button class="on">Until 7 days after</button><button>Always open</button></div>
+      </div></div>
+
+      <!-- Location -->
+      <div class="reveal bezel"><div class="bezel-core p-6">
+        <h3 class="font-display text-lg font-semibold mb-1">Location &amp; geo-tagging</h3>
+        <p class="text-white/40 text-sm mb-5">Tie photos to where they were shot.</p>
+        <div class="divide-y divide-white/5">
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Geo-tagging</p><p class="text-xs text-white/40">Read GPS from each photo</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Geofence</p><p class="text-xs text-white/40">Only accept photos near the venue</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Map view</p><p class="text-xs text-white/40">Pin photos on a map</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Auto-group by place</p><p class="text-xs text-white/40">Ceremony, afterparty, etc.</p></div><div class="tg"></div></div>
+        </div>
+        <div class="flex items-center justify-between mt-4 mb-1.5"><label class="text-sm">Geofence radius</label><span class="font-display font-semibold text-lime">250 m</span></div>
+        <div class="track"><div class="fill" style="width:40%"></div><div class="knob" style="left:40%"></div></div>
+      </div></div>
+
+      <!-- AI -->
+      <div class="reveal bezel"><div class="bezel-core p-6">
+        <h3 class="font-display text-lg font-semibold mb-1">AI features</h3>
+        <p class="text-white/40 text-sm mb-5">Powered by the Immich engine.</p>
+        <div class="divide-y divide-white/5">
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Face matching</p><p class="text-xs text-white/40">Selfie finds a guest's photos. Needs consent.</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Auto-highlights</p><p class="text-xs text-white/40">Best-shot recap reel</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Semantic + OCR search</p><p class="text-xs text-white/40">Search photos in plain words</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Auto-moderation</p><p class="text-xs text-white/40">Filter NSFW / blurry shots</p></div><div class="tg on"></div></div>
+        </div>
+      </div></div>
+
+      <!-- Access -->
+      <div class="reveal bezel"><div class="bezel-core p-6">
+        <h3 class="font-display text-lg font-semibold mb-1">Access &amp; privacy</h3>
+        <p class="text-white/40 text-sm mb-5">Who can join, view, and download.</p>
+        <label class="block text-sm text-white/50 mb-2">Visibility</label>
+        <div class="seg mb-4"><button class="on">Private (QR)</button><button>Unlisted</button><button>Public</button></div>
+        <div class="divide-y divide-white/5">
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Require name to join</p></div><div class="tg on"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Host approves new guests</p></div><div class="tg"></div></div>
+          <div class="flex items-center justify-between py-3"><div><p class="text-sm">Upload to unlock gallery</p><p class="text-xs text-white/40">Must add photos before viewing</p></div><div class="tg on"></div></div>
+        </div>
+        <label class="block text-sm text-white/50 mt-4 mb-2">Downloads</label>
+        <div class="seg"><button class="on">Everyone</button><button>Host only</button><button>Disabled</button></div>
+      </div></div>
+    </div>
+
+    <!-- live preview / launch -->
+    <div class="reveal bezel vf lg:sticky lg:top-28"><div class="bezel-core p-5">
+      <div class="rounded-xl overflow-hidden mb-4"><img src="img/p3.svg" class="w-full"></div>
+      <p class="text-[10px] uppercase tracking-[0.2em] text-white/40">Preview</p>
+      <h3 class="font-display text-xl font-bold mt-1">Aisha &amp; Dev, Sangeet</h3>
+      <p class="text-white/40 text-sm">Wedding · Jun 28 · The Leela</p>
+      <div class="flex flex-wrap gap-1.5 mt-4 text-[11px]">
+        <span class="rounded-full px-2.5 py-1 bg-white/[0.05] border border-white/10 text-white/60">15 / guest</span>
+        <span class="rounded-full px-2.5 py-1 bg-white/[0.05] border border-white/10 text-white/60">geofenced</span>
+        <span class="rounded-full px-2.5 py-1 bg-white/[0.05] border border-white/10 text-white/60">face match</span>
+        <span class="rounded-full px-2.5 py-1 bg-white/[0.05] border border-white/10 text-white/60">private</span>
+      </div>
+      <button onclick="show('host')" class="cta group w-full bg-lime text-ink font-semibold py-3.5 rounded-full mt-5 flex items-center justify-center gap-2">Create &amp; go live <span class="ico">↗</span></button>
+      <p class="text-center text-white/30 text-xs mt-3">You can change any of this later</p>
+    </div></div>
+
+  </div>
+</section>
+
+<!-- ============ HOST / QR ============ -->
+<section id="host" class="screen pt-36 pb-28">
+  <p class="reveal text-[10px] uppercase tracking-[0.2em] text-lime mb-3">Host view</p>
+  <h2 class="reveal font-display text-5xl font-bold mb-12 tracking-tight">Your event is live</h2>
+  <div class="grid lg:grid-cols-[0.85fr_1.15fr] gap-6">
+    <!-- QR bezel card -->
+    <div class="reveal bezel vf">
+      <div class="bezel-core p-8 flex flex-col items-center text-center">
+        <div class="flex items-center gap-2 text-xs text-coral mb-5"><span class="w-1.5 h-1.5 rounded-full bg-coral rec"></span> RECORDING · 2h 14m</div>
+        <h3 class="font-display text-2xl font-semibold">Aisha &amp; Dev - Sangeet</h3>
+        <p class="text-white/40 text-sm mb-7">Tap, scan, or share the link</p>
+        <div class="bg-white p-4 rounded-2xl shadow-[0_0_50px_rgba(215,255,62,0.15)]">
+          <svg width="180" height="180" viewBox="0 0 29 29" shape-rendering="crispEdges">
+            <rect width="29" height="29" fill="#fff"/><g fill="#050505">
+            <rect x="0" y="0" width="7" height="7"/><rect x="2" y="2" width="3" height="3" fill="#fff"/><rect x="2.8" y="2.8" width="1.4" height="1.4"/>
+            <rect x="22" y="0" width="7" height="7"/><rect x="24" y="2" width="3" height="3" fill="#fff"/><rect x="24.8" y="2.8" width="1.4" height="1.4"/>
+            <rect x="0" y="22" width="7" height="7"/><rect x="2" y="24" width="3" height="3" fill="#fff"/><rect x="2.8" y="24.8" width="1.4" height="1.4"/>
+            <rect x="9" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="19" y="2" width="1" height="1"/>
+            <rect x="9" y="3" width="2" height="1"/><rect x="13" y="4" width="1" height="2"/><rect x="17" y="3" width="2" height="1"/><rect x="10" y="6" width="1" height="1"/>
+            <rect x="1" y="9" width="1" height="2"/><rect x="3" y="9" width="1" height="1"/><rect x="5" y="10" width="2" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="4" y="13" width="1" height="1"/>
+            <rect x="9" y="9" width="3" height="3"/><rect x="14" y="9" width="1" height="2"/><rect x="16" y="10" width="2" height="1"/><rect x="19" y="9" width="1" height="3"/><rect x="22" y="9" width="1" height="1"/><rect x="24" y="10" width="2" height="2"/><rect x="27" y="9" width="1" height="2"/>
+            <rect x="9" y="14" width="1" height="1"/><rect x="11" y="15" width="2" height="1"/><rect x="14" y="14" width="1" height="2"/><rect x="17" y="15" width="1" height="1"/><rect x="20" y="14" width="2" height="1"/><rect x="24" y="15" width="1" height="2"/><rect x="27" y="14" width="1" height="1"/>
+            <rect x="9" y="18" width="2" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="16" y="18" width="1" height="2"/><rect x="19" y="19" width="2" height="1"/><rect x="23" y="18" width="1" height="1"/><rect x="26" y="19" width="2" height="1"/>
+            <rect x="9" y="22" width="1" height="2"/><rect x="11" y="23" width="2" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="16" y="24" width="2" height="1"/><rect x="19" y="22" width="1" height="3"/><rect x="22" y="23" width="2" height="1"/><rect x="25" y="22" width="1" height="2"/><rect x="27" y="24" width="1" height="1"/>
+            <rect x="10" y="26" width="1" height="1"/><rect x="13" y="27" width="1" height="1"/><rect x="15" y="26" width="2" height="1"/><rect x="18" y="27" width="1" height="1"/><rect x="21" y="26" width="1" height="1"/><rect x="24" y="27" width="2" height="1"/>
+          </g></svg>
+        </div>
+        <div class="rounded-full px-4 py-2 mt-6 text-sm text-white/70 font-mono bg-white/[0.04] border border-white/10">bocc.app/e/aisha-dev</div>
+        <div class="flex gap-2 mt-4 w-full">
+          <button class="cta group flex-1 bg-lime text-ink font-semibold py-3 rounded-full flex items-center justify-center gap-2">Copy link <span class="ico">↗</span></button>
+          <button class="cta flex-1 py-3 rounded-full bg-white/[0.04] border border-white/10 hover:bg-white/[0.07] text-sm">Download QR</button>
+        </div>
+      </div>
+    </div>
+    <!-- live stats -->
+    <div class="space-y-5">
+      <div class="grid grid-cols-3 gap-5">
+        <div class="reveal bezel"><div class="bezel-core p-6"><div class="font-display text-5xl font-bold text-lime">38</div><div class="text-white/40 text-sm mt-2">crew joined</div></div></div>
+        <div class="reveal bezel"><div class="bezel-core p-6"><div class="font-display text-5xl font-bold">412</div><div class="text-white/40 text-sm mt-2">photos pooled</div></div></div>
+        <div class="reveal bezel"><div class="bezel-core p-6"><div class="font-display text-5xl font-bold">21</div><div class="text-white/40 text-sm mt-2">faces found</div></div></div>
+      </div>
+      <div class="reveal bezel"><div class="bezel-core p-6">
+        <div class="flex items-center justify-between mb-5"><h3 class="font-semibold text-lg">Live feed</h3><span class="text-xs text-white/40 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-lime rec"></span>auto-updating</span></div>
+        <div class="space-y-4">
+          <div class="flex items-center gap-3"><img class="w-10 h-10 rounded-full object-cover" src="img/u1.svg"><p class="text-sm"><span class="font-medium">Riya</span> <span class="text-white/40">added 12 photos</span></p><span class="ml-auto text-xs text-white/30">now</span></div>
+          <div class="flex items-center gap-3"><img class="w-10 h-10 rounded-full object-cover" src="img/u2.svg"><p class="text-sm"><span class="font-medium">Karan</span> <span class="text-white/40">joined the crew</span></p><span class="ml-auto text-xs text-white/30">1m</span></div>
+          <div class="flex items-center gap-3"><img class="w-10 h-10 rounded-full object-cover" src="img/u3.svg"><p class="text-sm"><span class="font-medium">Meera</span> <span class="text-white/40">added 9 photos</span></p><span class="ml-auto text-xs text-white/30">3m</span></div>
+        </div>
+      </div></div>
+      <div class="reveal bezel" style="background:linear-gradient(135deg,rgba(215,255,62,0.12),rgba(255,255,255,0.04))">
+        <div class="bezel-core p-6 flex items-start gap-4" style="background:linear-gradient(135deg,rgba(215,255,62,0.06),#0E0E10)">
+          <div class="w-11 h-11 rounded-xl bg-lime text-ink grid place-items-center font-bold text-xl shrink-0">✶</div>
+          <div><h3 class="font-semibold text-lg">Auto-highlights ready</h3><p class="text-white/50 text-sm mt-1">We picked the 24 sharpest, best-lit frames for a recap reel.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GALLERY ============ -->
+<section id="gallery" class="screen pt-36 pb-28">
+  <div class="reveal flex items-end justify-between mb-8 flex-wrap gap-4">
+    <div>
+      <p class="text-[10px] uppercase tracking-[0.2em] text-lime mb-2">Pooled gallery</p>
+      <h2 class="font-display text-5xl font-bold tracking-tight">Aisha &amp; Dev</h2>
+      <p class="text-white/40 text-sm mt-2">412 photos · 38 crew · live</p>
+    </div>
+    <button onclick="show('search')" class="cta rounded-full px-5 py-3 text-sm text-white/50 bg-white/[0.04] border border-white/10 hover:bg-white/[0.07] flex items-center gap-2">🔍 Search "the cake", "dancing"…</button>
+  </div>
+
+  <!-- people strip -->
+  <div class="reveal flex gap-4 overflow-x-auto pb-5 mb-8">
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta">
+      <div class="w-16 h-16 rounded-full bg-lime grid place-items-center text-ink font-semibold text-xs ring-2 ring-lime leading-tight text-center">Find<br>me</div>
+      <span class="text-xs text-white/50">Selfie</span>
+    </button>
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta"><img class="w-16 h-16 rounded-full object-cover ring-2 ring-transparent hover:ring-lime transition" src="img/f1.svg"><span class="text-xs text-white/50">Riya · 41</span></button>
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta"><img class="w-16 h-16 rounded-full object-cover" src="img/f2.svg"><span class="text-xs text-white/50">Dev · 88</span></button>
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta"><img class="w-16 h-16 rounded-full object-cover" src="img/f3.svg"><span class="text-xs text-white/50">Aisha · 95</span></button>
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta"><img class="w-16 h-16 rounded-full object-cover" src="img/f4.svg"><span class="text-xs text-white/50">Karan · 27</span></button>
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta"><img class="w-16 h-16 rounded-full object-cover" src="img/f5.svg"><span class="text-xs text-white/50">Meera · 33</span></button>
+    <button onclick="show('person')" class="shrink-0 flex flex-col items-center gap-2 cta"><div class="w-16 h-16 rounded-full bg-white/[0.04] border border-white/10 grid place-items-center text-white/50 text-sm">+16</div><span class="text-xs text-white/50">more</span></button>
+  </div>
+
+  <div class="reveal masonry">
+    <div><img src="img/g1.svg"></div>
+    <div><img src="img/g2.svg"></div>
+    <div><img src="img/g3.svg"></div>
+    <div><img src="img/g4.svg"></div>
+    <div><img src="img/g5.svg"></div>
+    <div><img src="img/g6.svg"></div>
+    <div><img src="img/g7.svg"></div>
+    <div><img src="img/g8.svg"></div>
+    <div><img src="img/g9.svg"></div>
+    <div><img src="img/g10.svg"></div>
+    <div><img src="img/g11.svg"></div>
+    <div><img src="img/g12.svg"></div>
+  </div>
+</section>
+
+<!-- ============ SEARCH ============ -->
+<section id="search" class="screen pt-36 pb-28">
+  <p class="reveal text-[10px] uppercase tracking-[0.2em] text-lime mb-3">Semantic search · CLIP</p>
+  <h2 class="reveal font-display text-5xl font-bold mb-8 tracking-tight">Find any moment in words</h2>
+  <div class="reveal bezel max-w-2xl">
+    <div class="bezel-core p-2 flex items-center gap-3">
+      <span class="pl-4 text-lime text-lg">🔍</span>
+      <input class="bg-transparent flex-1 py-3 outline-none text-lg" value="people dancing near the cake" />
+      <button class="cta group bg-lime text-ink font-semibold pl-5 pr-2 py-2 rounded-full flex items-center gap-2 mr-1">Search <span class="ico w-7 h-7 rounded-full bg-ink/10 grid place-items-center">↗</span></button>
+    </div>
+  </div>
+  <div class="reveal flex gap-2 mt-5 flex-wrap">
+    <span class="rounded-full px-4 py-1.5 text-sm text-white/55 bg-white/[0.04] border border-white/10">🍰 the cake</span>
+    <span class="rounded-full px-4 py-1.5 text-sm text-white/55 bg-white/[0.04] border border-white/10">💃 dancing</span>
+    <span class="rounded-full px-4 py-1.5 text-sm text-white/55 bg-white/[0.04] border border-white/10">🌅 golden hour</span>
+    <span class="rounded-full px-4 py-1.5 text-sm text-white/55 bg-white/[0.04] border border-white/10">😂 candids</span>
+    <span class="rounded-full px-4 py-1.5 text-sm text-white/55 bg-white/[0.04] border border-white/10">🥂 toasts</span>
+  </div>
+  <p class="reveal text-white/40 text-sm mt-10 mb-5">63 matches</p>
+  <div class="reveal masonry">
+    <div><img src="img/s1.svg"></div>
+    <div><img src="img/s2.svg"></div>
+    <div><img src="img/s3.svg"></div>
+    <div><img src="img/s4.svg"></div>
+    <div><img src="img/s5.svg"></div>
+    <div><img src="img/s6.svg"></div>
+    <div><img src="img/s7.svg"></div>
+    <div><img src="img/s8.svg"></div>
+  </div>
+</section>
+
+<!-- ============ PERSON ============ -->
+<section id="person" class="screen pt-36 pb-28">
+  <div class="reveal flex items-center gap-5 mb-10 flex-wrap">
+    <div class="bezel rounded-full"><img class="w-24 h-24 rounded-full object-cover" src="img/f3.svg"></div>
+    <div>
+      <p class="text-[10px] uppercase tracking-[0.2em] text-lime mb-2">Matched from your selfie</p>
+      <h2 class="font-display text-5xl font-bold tracking-tight">You're in 47 photos</h2>
+      <p class="text-white/40 text-sm mt-2">98% match confidence · only photos you appear in</p>
+    </div>
+    <div class="ml-auto flex gap-2">
+      <button class="cta group bg-lime text-ink font-semibold pl-5 pr-2 py-2 rounded-full flex items-center gap-2">Download all <span class="ico w-8 h-8 rounded-full bg-ink/10 grid place-items-center">↓</span></button>
+      <button class="cta px-5 py-3 rounded-full bg-white/[0.04] border border-white/10 hover:bg-white/[0.07] text-sm">Not me?</button>
+    </div>
+  </div>
+  <div class="reveal masonry">
+    <div><img src="img/m1.svg"></div>
+    <div><img src="img/m2.svg"></div>
+    <div><img src="img/m3.svg"></div>
+    <div><img src="img/m4.svg"></div>
+    <div><img src="img/m5.svg"></div>
+    <div><img src="img/m6.svg"></div>
+    <div><img src="img/m7.svg"></div>
+    <div><img src="img/m8.svg"></div>
+  </div>
+</section>
+
+</main>
+
+<footer class="relative z-10 border-t border-white/10 mt-10">
+  <div class="max-w-[1240px] mx-auto px-6 py-10 flex items-center justify-between text-sm text-white/30 flex-wrap gap-3">
+    <span>BOCC - Be Our Camera Crew</span>
+    <span class="font-mono">Immich engine · NestJS BFF · Next.js</span>
+  </div>
+</footer>
+
+<script>
+function revealIn(scope){
+  const els = (scope||document).querySelectorAll('.reveal');
+  els.forEach((el,i)=>{ el.classList.remove('in'); void el.offsetWidth;
+    setTimeout(()=>el.classList.add('in'), 60*i); });
+}
+function show(id, btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+  const sc = document.getElementById(id); sc.classList.add('show');
+  document.querySelectorAll('.tabbtn').forEach(b=>{ b.classList.remove('active'); b.classList.add('text-white/55'); });
+  if(btn){ btn.classList.add('active'); btn.classList.remove('text-white/55'); }
+  window.scrollTo({top:0,behavior:'smooth'});
+  revealIn(sc);
+}
+window.addEventListener('load',()=>revealIn(document.getElementById('landing')));
+</script>
+</body>
+</html>

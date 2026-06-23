@@ -1,0 +1,156 @@
+// BOCC data model. Event logic lives here; Immich stays single-tenant and stores
+// the actual photos + AI. An Event maps 1:1 to an Immich album.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  DRAFT
+  LIVE
+  ENDED
+}
+
+enum EventType {
+  WEDDING
+  BIRTHDAY
+  CORPORATE
+  SPORTS
+  CONCERT
+  TRAVEL
+  OTHER
+}
+
+enum Visibility {
+  PRIVATE // QR / link only
+  UNLISTED
+  PUBLIC
+}
+
+enum UploadWindow {
+  DURING_EVENT
+  DAYS_AFTER
+  ALWAYS
+}
+
+enum DownloadPolicy {
+  EVERYONE
+  HOST_ONLY
+  DISABLED
+}
+
+enum MemberRole {
+  HOST
+  GUEST
+}
+
+enum PhotoStatus {
+  PENDING // awaiting host moderation
+  APPROVED
+  REJECTED
+}
+
+model Event {
+  id        String      @id @default(cuid())
+  name      String
+  type      EventType   @default(OTHER)
+  status    EventStatus @default(DRAFT)
+  coverUrl  String?
+  venue     String?
+  startsAt  DateTime?
+
+  // join
+  slug      String   @unique // used in QR / share link: bocc.app/e/<slug>
+  joinCode  String?  // optional short code
+
+  // Immich linkage
+  immichAlbumId String?
+
+  // ---- capture rules ----
+  perGuestCap   Int          @default(15) // 0 = unlimited
+  totalCap      Int?         // optional ceiling
+  allowVideo    Boolean      @default(true)
+  maxVideoSec   Int          @default(30)
+  liveCaptureOnly Boolean    @default(false)
+  uploadWindow  UploadWindow @default(DAYS_AFTER)
+  uploadDaysAfter Int        @default(7)
+
+  // ---- location / geo ----
+  geoEnabled     Boolean @default(false)
+  geofenceEnabled Boolean @default(false)
+  geofenceLat    Float?
+  geofenceLng    Float?
+  geofenceRadiusM Int     @default(250)
+  mapView        Boolean @default(false)
+
+  // ---- AI ----
+  faceMatching   Boolean @default(true)
+  autoHighlights Boolean @default(true)
+  semanticSearch Boolean @default(true)
+  autoModeration Boolean @default(true)
+
+  // ---- access / privacy ----
+  visibility     Visibility     @default(PRIVATE)
+  requireName    Boolean        @default(true)
+  requireSelfie  Boolean        @default(false)
+  hostApproval   Boolean        @default(false)
+  uploadToUnlock Boolean        @default(false)
+  downloadPolicy DownloadPolicy @default(EVERYONE)
+  watermark      Boolean        @default(false)
+  moderationQueue Boolean       @default(false)
+
+  // lifecycle
+  expiryDays Int?     // auto-delete after N days; null = never
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members Member[]
+  photos  Photo[]
+
+  @@index([status])
+}
+
+model Member {
+  id        String     @id @default(cuid())
+  eventId   String
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  role      MemberRole @default(GUEST)
+
+  // consent (biometric / face matching) - GDPR / BIPA
+  consentFaceMatch Boolean   @default(false)
+  consentAt        DateTime?
+
+  // the face cluster this member resolved to in Immich (after selfie match)
+  immichPersonId String?
+
+  createdAt DateTime @default(now())
+  photos    Photo[]
+
+  @@index([eventId])
+}
+
+model Photo {
+  id        String      @id @default(cuid())
+  eventId   String
+  event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId  String?
+  member    Member?     @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  immichAssetId String       @unique
+  status        PhotoStatus  @default(APPROVED)
+  isVideo       Boolean      @default(false)
+
+  takenAt   DateTime?
+  lat       Float?
+  lng       Float?
+
+  createdAt DateTime @default(now())
+
+  @@index([eventId, status])
+  @@index([memberId])
+}

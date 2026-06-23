@@ -1,0 +1,73 @@
+# Minimal Immich stack for the BOCC selfie-match spike.
+#
+# Uses ONLY published images (no source build). Mirrors the canonical
+# immich/docker/docker-compose.yml shipped in the cloned ./immich repo, trimmed
+# to the four services we need: server, machine-learning, redis, database.
+#
+# Self-contained: its own Postgres (vectorchord/pgvecto.rs image that Immich
+# requires) on an internal network. It does NOT touch our app DB (bocc-postgres
+# on host 5433). The Immich server is published on host port 2283.
+#
+# Bring up:   docker compose --env-file .env up -d
+# Tear down:  docker compose --env-file .env down            (keeps volumes)
+#             docker compose --env-file .env down -v         (wipes DB + models)
+#
+# See README.md for the API-key step and where to wire IMMICH_URL / IMMICH_API_KEY.
+
+name: bocc-immich
+
+services:
+  immich-server:
+    container_name: bocc_immich_server
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    volumes:
+      - ${UPLOAD_LOCATION}:/data
+      - /etc/localtime:/etc/localtime:ro
+    env_file:
+      - .env
+    ports:
+      - '2283:2283'
+    depends_on:
+      - redis
+      - database
+    restart: always
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    container_name: bocc_immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
+    volumes:
+      - model-cache:/cache
+    env_file:
+      - .env
+    restart: always
+    healthcheck:
+      disable: false
+
+  redis:
+    container_name: bocc_immich_redis
+    image: docker.io/valkey/valkey:9@sha256:4963247afc4cd33c7d3b2d2816b9f7f8eeebab148d29056c2ca4d7cbc966f2d9
+    healthcheck:
+      test: redis-cli ping || exit 1
+    restart: always
+
+  database:
+    container_name: bocc_immich_postgres
+    # Immich requires its bundled Postgres image (vectorchord + pgvecto.rs).
+    # This is SEPARATE from our app's pgvector/pgvector:pg16 on host port 5433.
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+    shm_size: 128mb
+    restart: always
+    healthcheck:
+      disable: false
+
+volumes:
+  model-cache:

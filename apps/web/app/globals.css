@@ -1,0 +1,266 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens (locked palette + fonts). Match mockups/web.html      */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-ink: #050505;
+  --color-surface: #0e0e10;
+  --color-surface2: #161619;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-lime: #d7ff3e;
+  --color-coral: #ff6b5e;
+
+  /* fonts are injected as CSS vars by next/font in layout.tsx */
+  --font-display: var(--font-space-grotesk), -apple-system, "SF Pro Display",
+    system-ui, sans-serif;
+  --font-body: var(--font-hanken-grotesk), -apple-system, system-ui, sans-serif;
+}
+
+:root {
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: var(--color-lime);
+  color: var(--color-ink);
+}
+
+::-webkit-scrollbar {
+  width: 0;
+}
+
+/* radial mesh orbs (fixed background) */
+.mesh {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.mesh::before,
+.mesh::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(120px);
+  opacity: 0.18;
+}
+.mesh::before {
+  width: 560px;
+  height: 560px;
+  background: #d7ff3e;
+  top: -180px;
+  left: -120px;
+}
+.mesh::after {
+  width: 520px;
+  height: 520px;
+  background: #ff6b5e;
+  bottom: -160px;
+  right: -120px;
+  opacity: 0.14;
+}
+
+/* fixed film grain overlay */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* double-bezel cards */
+.bezel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 2rem;
+  padding: 6px;
+}
+.bezel-core {
+  background: #0e0e10;
+  border-radius: calc(2rem - 6px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
+}
+
+/* viewfinder corner brackets */
+.vf {
+  position: relative;
+}
+.vf::before,
+.vf::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: #d7ff3e;
+  z-index: 5;
+}
+.vf::before {
+  top: 14px;
+  left: 14px;
+  border-top: 2px solid;
+  border-left: 2px solid;
+}
+.vf::after {
+  bottom: 14px;
+  right: 14px;
+  border-bottom: 2px solid;
+  border-right: 2px solid;
+}
+
+/* masonry photo grid */
+.masonry {
+  column-count: 4;
+  column-gap: 16px;
+}
+@media (max-width: 1100px) {
+  .masonry {
+    column-count: 3;
+  }
+}
+@media (max-width: 700px) {
+  .masonry {
+    column-count: 2;
+  }
+}
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+.masonry img {
+  transition: transform 0.9s var(--ease), filter 0.9s var(--ease);
+  width: 100%;
+  display: block;
+}
+.masonry > *:hover img {
+  transform: scale(1.05);
+}
+
+/* blinking REC dot */
+.rec {
+  animation: rec 1.4s steps(2, end) infinite;
+}
+@keyframes rec {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* magnetic CTA */
+.cta {
+  transition: transform 0.4s var(--ease), filter 0.4s var(--ease);
+}
+.cta:active {
+  transform: scale(0.97);
+}
+.cta .ico {
+  transition: transform 0.5s var(--ease);
+}
+.cta:hover .ico {
+  transform: translate(3px, -2px) scale(1.06);
+}
+
+/* form controls */
+.track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+.track .fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: #d7ff3e;
+}
+.track .knob {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* stepper rail */
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.45);
+  transition: all 0.3s var(--ease);
+  width: 100%;
+  text-align: left;
+}
+.step.on {
+  background: rgba(215, 255, 62, 0.08);
+  color: #fff;
+}
+.step .dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  flex: none;
+}
+.step.on .dot {
+  background: #d7ff3e;
+  color: #050505;
+}
+.step.done .dot {
+  background: rgba(215, 255, 62, 0.25);
+  color: #d7ff3e;
+}
+
+/* Respect reduced-motion: hold the REC dot steady, drop perpetual/large transitions */
+@media (prefers-reduced-motion: reduce) {
+  .rec {
+    animation: none !important;
+  }
+  .masonry img {
+    transition: none !important;
+  }
+  .masonry > *:hover img {
+    transform: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "BOCC",
+    "slug": "bocc-mobile",
+    "scheme": "bocc",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#050505",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050505"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "BOCC uses the camera to take your find-me selfie and capture event photos.",
+        "NSPhotoLibraryUsageDescription": "BOCC needs photo access so you can add your shots to the shared event gallery."
+      }
+    },
+    "android": {
+      "package": "app.bocc.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#050505"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BOCC needs photo access so you can add your shots to the shared event gallery.",
+          "cameraPermission": "BOCC uses the camera to take your find-me selfie."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# Stack secrets + generated data (never commit)
+.env
+library/
+postgres/

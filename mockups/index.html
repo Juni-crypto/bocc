@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOCC - Mockups</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ease:cubic-bezier(0.32,0.72,0,1)}
+  body{background:#050505;font-family:'Hanken Grotesk',sans-serif;overflow:hidden}
+  .font-display{font-family:'Space Grotesk'}
+  .mesh{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .mesh::before,.mesh::after{content:"";position:absolute;border-radius:9999px;filter:blur(130px)}
+  .mesh::before{width:600px;height:600px;background:#D7FF3E;top:-200px;left:-150px;opacity:.16}
+  .mesh::after{width:560px;height:560px;background:#FF6B5E;bottom:-200px;right:-150px;opacity:.12}
+  .grain{position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.04;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .rec{animation:rec 1.4s steps(2,end) infinite}@keyframes rec{50%{opacity:.2}}
+  .bezel{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:2rem;padding:6px;transition:all .5s var(--ease)}
+  .bezel:hover{background:rgba(215,255,62,0.10);border-color:rgba(215,255,62,0.4)}
+  .core{background:#0E0E10;border-radius:calc(2rem - 6px);box-shadow:inset 0 1px 1px rgba(255,255,255,0.06)}
+  .cta{transition:transform .4s var(--ease)}.cta:active{transform:scale(.97)}
+  .reveal{opacity:0;transform:translateY(28px)}.reveal.in{opacity:1;transform:none;transition:all .8s var(--ease)}
+</style>
+</head>
+<body class="text-white/90 min-h-screen grid place-items-center p-6">
+<div class="mesh"></div><div class="grain"></div>
+<div class="relative z-10 max-w-2xl w-full">
+  <div class="reveal flex items-center gap-3 mb-4">
+    <div class="w-12 h-12 rounded-full bg-[#D7FF3E] grid place-items-center"><div class="w-4 h-4 rounded-full bg-[#050505] rec"></div></div>
+    <div><h1 class="font-display text-3xl font-bold tracking-tight">BOCC</h1><p class="text-white/40 -mt-1">Be Our Camera Crew · mockups</p></div>
+  </div>
+  <p class="reveal text-white/55 mb-9 text-lg">Ethereal-glass, photo-forward, viewfinder identity. Two clients over one Immich-backed API. Pick a surface to review:</p>
+  <div class="grid sm:grid-cols-2 gap-5">
+    <a href="web.html" class="reveal bezel cta group block">
+      <div class="core p-7 h-full">
+        <div class="text-4xl mb-4">🖥️</div>
+        <h2 class="font-display text-xl font-semibold">Web app</h2>
+        <p class="text-white/45 text-sm mt-1.5">Landing · Host QR · Gallery · Search · Person. Tab between 5 screens.</p>
+        <span class="inline-block mt-5 text-[#D7FF3E] text-sm group-hover:translate-x-1 transition">Open →</span>
+      </div>
+    </a>
+    <a href="mobile.html" class="reveal bezel cta group block">
+      <div class="core p-7 h-full">
+        <div class="text-4xl mb-4">📱</div>
+        <h2 class="font-display text-xl font-semibold">Mobile app</h2>
+        <p class="text-white/45 text-sm mt-1.5">Guest flow in phone frames: join → selfie → upload → gallery → my photos.</p>
+        <span class="inline-block mt-5 text-[#D7FF3E] text-sm group-hover:translate-x-1 transition">Open →</span>
+      </div>
+    </a>
+  </div>
+  <a href="../PLAN.md" class="reveal block mt-5 text-center text-white/40 text-sm hover:text-white/70 transition">📄 Read the full build plan (PLAN.md)</a>
+</div>
+<script>document.querySelectorAll('.reveal').forEach((el,i)=>setTimeout(()=>el.classList.add('in'),90*i));</script>
+</body>
+</html>
