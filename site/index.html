@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BOCC - Be Our Camera Crew</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style type="text/tailwindcss">
+  @theme {
+    --color-ink:#070708; --color-surface:#0E0E10; --color-surface2:#161619;
+    --color-line:rgba(255,255,255,0.08); --color-lime:#D7FF3E; --color-coral:#FF6B5E;
+    --font-display:"Space Grotesk", -apple-system, "SF Pro Display", system-ui, sans-serif;
+    --font-body:"Hanken Grotesk", -apple-system, system-ui, sans-serif;
+  }
+</style>
+<style>
+  :root{ --ease:cubic-bezier(0.32,0.72,0,1); }
+  *{ -webkit-font-smoothing:antialiased; }
+  html{ scroll-behavior:smooth; }
+  body{ background:#070708; font-family:"Hanken Grotesk",-apple-system,system-ui,sans-serif; overflow-x:hidden; }
+  .font-display{ font-family:"Space Grotesk",-apple-system,"SF Pro Display",system-ui,sans-serif; }
+
+  .mesh{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .mesh::before,.mesh::after{ content:""; position:absolute; border-radius:9999px; filter:blur(140px); }
+  .mesh::before{ width:620px; height:620px; background:#D7FF3E; top:-220px; left:-160px; opacity:.14; }
+  .mesh::after{ width:560px; height:560px; background:#FF6B5E; top:40%; right:-200px; opacity:.10; }
+  .grain{ position:fixed; inset:0; z-index:60; pointer-events:none; opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .bezel{ background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:2rem; padding:6px; }
+  .core{ background:#0E0E10; border-radius:calc(2rem - 6px); box-shadow:inset 0 1px 1px rgba(255,255,255,0.06); }
+  .vf{ position:relative; }
+  .vf::before,.vf::after{ content:""; position:absolute; width:22px; height:22px; border-color:#D7FF3E; z-index:5; }
+  .vf::before{ top:14px; left:14px; border-top:2px solid; border-left:2px solid; }
+  .vf::after{ bottom:14px; right:14px; border-bottom:2px solid; border-right:2px solid; }
+
+  .masonry{ column-count:2; column-gap:12px; }
+  .masonry>*{ break-inside:avoid; margin-bottom:12px; border-radius:1rem; overflow:hidden; }
+  .masonry img{ width:100%; display:block; transition:transform .9s var(--ease); }
+  .masonry>*:hover img{ transform:scale(1.05); }
+
+  .rec{ animation:rec 1.4s steps(2,end) infinite; }@keyframes rec{ 50%{ opacity:.2; } }
+  ::selection{ background:#D7FF3E; color:#070708; }
+
+  .cta{ transition:transform .4s var(--ease); }
+  .cta:active{ transform:scale(.97); }
+  .cta .ico{ transition:transform .5s var(--ease); }
+  .cta:hover .ico{ transform:translate(3px,-2px); }
+
+  .reveal{ opacity:0; transform:translateY(34px); filter:blur(6px); }
+  .reveal.in{ opacity:1; transform:none; filter:none; transition:all .9s var(--ease); }
+
+  .eyebrow{ font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#8a8a92; }
+  .icon{ width:22px; height:22px; stroke:#D7FF3E; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .icon-sm{ width:18px; height:18px; stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  ::-webkit-scrollbar{ width:0; }
+</style>
+</head>
+<body class="text-white/90">
+<div class="mesh"></div>
+<div class="grain"></div>
+
+<!-- ===== NAV ===== -->
+<div class="fixed top-0 inset-x-0 z-40 flex justify-center pointer-events-none">
+  <header class="pointer-events-auto mt-6 px-2 py-2 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-2xl flex items-center gap-1 shadow-[0_8px_40px_rgba(0,0,0,0.5)]">
+    <div class="flex items-center gap-2 pl-3 pr-2">
+      <div class="w-7 h-7 rounded-full bg-lime grid place-items-center"><div class="w-2.5 h-2.5 rounded-full bg-ink rec"></div></div>
+      <span class="font-display font-bold tracking-tight">BOCC</span>
+    </div>
+    <div class="w-px h-5 bg-white/10 mx-1"></div>
+    <a href="#how" class="px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white transition">How it works</a>
+    <a href="#features" class="px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white transition">Features</a>
+    <a href="#engine" class="px-3.5 py-1.5 rounded-full text-sm text-white/55 hover:text-white transition hidden sm:block">Engine</a>
+    <a href="#start" class="cta group bg-lime text-ink font-semibold pl-4 pr-2 py-1.5 rounded-full text-sm flex items-center gap-2 ml-1">
+      Start an event
+      <span class="ico w-6 h-6 rounded-full bg-ink/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon-sm" style="stroke:#070708"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+    </a>
+  </header>
+</div>
+
+<main class="relative z-10 max-w-[1240px] mx-auto px-6">
+
+<!-- ===== HERO (asymmetric split) ===== -->
+<section class="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center pt-40 pb-24 min-h-[100dvh]">
+  <div>
+    <div class="reveal inline-flex items-center gap-2 rounded-full px-3 py-1 bg-white/[0.04] border border-white/10 mb-7">
+      <span class="w-1.5 h-1.5 rounded-full bg-coral rec"></span>
+      <span class="eyebrow">Live at your event</span>
+    </div>
+    <h1 class="reveal font-display font-bold text-[4.6rem] leading-[0.92] tracking-[-0.03em]">
+      Everyone's<br>the <span class="text-lime">camera crew.</span>
+    </h1>
+    <p class="reveal text-white/55 text-xl mt-7 max-w-md leading-relaxed">
+      Guests scan a QR, drop their best shots, and the whole night pools into one shared gallery.
+      Then a single selfie finds every photo they're in.
+    </p>
+    <div class="reveal flex flex-wrap gap-3 mt-9">
+      <a href="#start" class="cta group bg-lime text-ink font-semibold pl-6 pr-2 py-2 rounded-full flex items-center gap-3">
+        Start an event
+        <span class="ico w-9 h-9 rounded-full bg-ink/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon-sm" style="stroke:#070708"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+      </a>
+      <a href="#how" class="cta px-6 py-3.5 rounded-full bg-white/[0.04] border border-white/10 hover:bg-white/[0.07] transition">See how it works</a>
+    </div>
+    <div class="reveal flex items-center gap-9 mt-12">
+      <div><span class="block text-white font-display text-3xl font-semibold">One</span><span class="text-sm text-white/40">shared roll</span></div>
+      <div class="w-px h-9 bg-white/10"></div>
+      <div><span class="block text-white font-display text-3xl font-semibold">Every</span><span class="text-sm text-white/40">angle of the night</span></div>
+      <div class="w-px h-9 bg-white/10"></div>
+      <div><span class="block text-white font-display text-3xl font-semibold">Zero</span><span class="text-sm text-white/40">photos missed</span></div>
+    </div>
+  </div>
+  <div class="reveal bezel vf">
+    <div class="core p-3 overflow-hidden">
+      <div class="masonry">
+        <div><img src="img/g1.svg"></div>
+        <div><img src="img/g4.svg"></div>
+        <div><img src="img/s2.svg"></div>
+        <div><img src="img/m5.svg"></div>
+        <div><img src="img/g8.svg"></div>
+        <div><img src="img/s6.svg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PROBLEM -> SOLUTION ===== -->
+<section class="py-24">
+  <div class="reveal max-w-3xl">
+    <p class="eyebrow mb-4">The problem</p>
+    <h2 class="font-display text-4xl md:text-5xl font-bold tracking-tight leading-[1.05]">
+      You came home with 40 photos.<br>The night actually had <span class="text-lime">four thousand.</span>
+    </h2>
+    <p class="text-white/55 text-lg mt-6 max-w-xl leading-relaxed">
+      Every guest shot the same event from a different seat, and all of it scattered across
+      camera rolls no one ever shares. The full story existed. It just never landed in one place.
+    </p>
+  </div>
+</section>
+
+<!-- ===== HOW IT WORKS ===== -->
+<section id="how" class="py-24">
+  <p class="reveal eyebrow mb-3">How it works</p>
+  <h2 class="reveal font-display text-4xl font-bold tracking-tight mb-12">From a QR to the whole night</h2>
+  <div class="grid md:grid-cols-5 gap-4">
+    <div class="reveal bezel"><div class="core p-6 h-full">
+      <svg viewBox="0 0 24 24" class="icon"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1"/></svg>
+      <div class="text-white/30 font-display text-sm mt-5">01</div>
+      <h3 class="font-semibold mt-1">Host drops a QR</h3>
+      <p class="text-white/45 text-sm mt-1.5">Spin up an event in seconds. Print it, beam it, share the link.</p>
+    </div></div>
+    <div class="reveal bezel"><div class="core p-6 h-full">
+      <svg viewBox="0 0 24 24" class="icon"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+      <div class="text-white/30 font-display text-sm mt-5">02</div>
+      <h3 class="font-semibold mt-1">Guests join</h3>
+      <p class="text-white/45 text-sm mt-1.5">No account. A name and a quick consent tap, and they're crew.</p>
+    </div></div>
+    <div class="reveal bezel"><div class="core p-6 h-full">
+      <svg viewBox="0 0 24 24" class="icon"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <div class="text-white/30 font-display text-sm mt-5">03</div>
+      <h3 class="font-semibold mt-1">Everyone shoots</h3>
+      <p class="text-white/45 text-sm mt-1.5">A per-guest cap keeps the gallery all keepers, not clutter.</p>
+    </div></div>
+    <div class="reveal bezel"><div class="core p-6 h-full">
+      <svg viewBox="0 0 24 24" class="icon"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="7" cy="7" r="1.4" fill="#D7FF3E"/><circle cx="14" cy="12" r="1.4" fill="#D7FF3E"/><circle cx="10" cy="17" r="1.4" fill="#D7FF3E"/></svg>
+      <div class="text-white/30 font-display text-sm mt-5">04</div>
+      <h3 class="font-semibold mt-1">It all pools</h3>
+      <p class="text-white/45 text-sm mt-1.5">One live gallery, every angle, updating as the night runs.</p>
+    </div></div>
+    <div class="reveal bezel" style="border-color:rgba(215,255,62,0.3)"><div class="core p-6 h-full">
+      <svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="m19 3 1.5 1.5L23 2" style="stroke:#D7FF3E"/></svg>
+      <div class="text-lime font-display text-sm mt-5">05</div>
+      <h3 class="font-semibold mt-1">Find your face</h3>
+      <p class="text-white/45 text-sm mt-1.5">One selfie surfaces every frame a guest appears in.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ===== FEATURE BENTO (varied rhythm) ===== -->
+<section id="features" class="py-24">
+  <p class="reveal eyebrow mb-3">What's inside</p>
+  <h2 class="reveal font-display text-4xl font-bold tracking-tight mb-12">Google-Photos intelligence, built for one night</h2>
+
+  <div class="grid lg:grid-cols-3 gap-4">
+    <!-- big: face matching -->
+    <div class="reveal bezel lg:col-span-2 lg:row-span-2"><div class="core p-8 h-full flex flex-col">
+      <div class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-lime/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon"><circle cx="12" cy="9" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>
+        <h3 class="font-display text-2xl font-semibold">Selfie find-my-photos</h3>
+      </div>
+      <p class="text-white/50 mt-3 max-w-md">One selfie, every photo you're in. Face clustering runs across the whole pooled gallery, so nobody scrolls 400 shots looking for themselves.</p>
+      <div class="vf mt-6 rounded-2xl overflow-hidden bg-surface2 grow grid grid-cols-3 gap-2 p-2">
+        <img class="rounded-lg w-full h-full object-cover" src="img/m1.svg">
+        <img class="rounded-lg w-full h-full object-cover ring-2 ring-lime" src="img/f3.svg">
+        <img class="rounded-lg w-full h-full object-cover" src="img/m4.svg">
+      </div>
+    </div></div>
+    <!-- semantic search -->
+    <div class="reveal bezel"><div class="core p-7 h-full">
+      <span class="w-10 h-10 rounded-xl bg-lime/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+      <h3 class="font-display text-lg font-semibold mt-4">Search in plain words</h3>
+      <p class="text-white/45 text-sm mt-1.5">"People near the cake." "Golden hour." OCR and CLIP search, no tags needed.</p>
+    </div></div>
+    <!-- geofence -->
+    <div class="reveal bezel"><div class="core p-7 h-full">
+      <span class="w-10 h-10 rounded-xl bg-lime/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <h3 class="font-display text-lg font-semibold mt-4">Venue geofencing</h3>
+      <p class="text-white/45 text-sm mt-1.5">Only accept photos shot at the venue. Keep the gallery on-site and on-theme.</p>
+    </div></div>
+    <!-- caps -->
+    <div class="reveal bezel"><div class="core p-7 h-full">
+      <span class="w-10 h-10 rounded-xl bg-lime/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon"><path d="M12 14a6 6 0 1 0-6-6"/><path d="M12 14v-4l3-2"/><path d="M3 12a9 9 0 1 0 9-9"/></svg></span>
+      <h3 class="font-display text-lg font-semibold mt-4">Per-guest caps</h3>
+      <p class="text-white/45 text-sm mt-1.5">Five, fifteen, or unlimited. A cap forces curation, so every shot earns its place.</p>
+    </div></div>
+    <!-- auto highlights -->
+    <div class="reveal bezel"><div class="core p-7 h-full">
+      <span class="w-10 h-10 rounded-xl bg-lime/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon"><path d="M12 3v4M12 17v4M5 12H1M23 12h-4M6.3 6.3 3.5 3.5M20.5 20.5l-2.8-2.8M6.3 17.7l-2.8 2.8M20.5 3.5l-2.8 2.8"/><circle cx="12" cy="12" r="3"/></svg></span>
+      <h3 class="font-display text-lg font-semibold mt-4">Auto-highlights</h3>
+      <p class="text-white/45 text-sm mt-1.5">The sharpest, best-lit frames pulled into a recap reel automatically.</p>
+    </div></div>
+    <!-- map -->
+    <div class="reveal bezel"><div class="core p-7 h-full">
+      <span class="w-10 h-10 rounded-xl bg-lime/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon"><path d="m9 3 6 2 6-2v16l-6 2-6-2-6 2V5z"/><path d="M9 3v16M15 5v16"/></svg></span>
+      <h3 class="font-display text-lg font-semibold mt-4">Map &amp; moments</h3>
+      <p class="text-white/45 text-sm mt-1.5">Photos pinned where they were shot, auto-grouped into ceremony, dinner, afterparty.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- ===== PRIVACY / CONSENT CALLOUT ===== -->
+<section class="py-24">
+  <div class="reveal bezel"><div class="core p-10 grid md:grid-cols-[auto_1fr] gap-8 items-center" style="background:linear-gradient(120deg,rgba(215,255,62,0.05),#0E0E10)">
+    <span class="w-16 h-16 rounded-2xl bg-lime/10 grid place-items-center shrink-0"><svg viewBox="0 0 24 24" class="icon" style="width:30px;height:30px"><path d="M12 3 4 6v6c0 5 3.4 7.6 8 9 4.6-1.4 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+    <div>
+      <p class="eyebrow mb-3">Consent, by design</p>
+      <h2 class="font-display text-3xl font-bold tracking-tight">Face matching that asks first</h2>
+      <p class="text-white/50 mt-3 max-w-2xl">Faces are biometric data. Consent is part of the join flow, not buried in a policy, so every guest opts in before a single face is processed. GDPR and BIPA grade, from day one.</p>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== HOSTS vs GUESTS (split) ===== -->
+<section class="py-24 grid lg:grid-cols-2 gap-5">
+  <div class="reveal bezel"><div class="core p-8 h-full">
+    <p class="eyebrow mb-3">For hosts</p>
+    <h3 class="font-display text-2xl font-semibold">Run the night, not the upload queue</h3>
+    <ul class="mt-5 space-y-3 text-white/55">
+      <li class="flex gap-3"><svg viewBox="0 0 24 24" class="icon-sm mt-0.5" style="stroke:#D7FF3E"><path d="m5 12 5 5 9-11"/></svg>Create from web or phone, full control over every setting</li>
+      <li class="flex gap-3"><svg viewBox="0 0 24 24" class="icon-sm mt-0.5" style="stroke:#D7FF3E"><path d="m5 12 5 5 9-11"/></svg>Live stats: crew joined, photos pooled, faces found</li>
+      <li class="flex gap-3"><svg viewBox="0 0 24 24" class="icon-sm mt-0.5" style="stroke:#D7FF3E"><path d="m5 12 5 5 9-11"/></svg>Moderation queue, expiry, and one-tap export of the album</li>
+    </ul>
+  </div></div>
+  <div class="reveal bezel"><div class="core p-8 h-full">
+    <p class="eyebrow mb-3">For guests</p>
+    <h3 class="font-display text-2xl font-semibold">Scan, shoot, find yourself</h3>
+    <ul class="mt-5 space-y-3 text-white/55">
+      <li class="flex gap-3"><svg viewBox="0 0 24 24" class="icon-sm mt-0.5" style="stroke:#D7FF3E"><path d="m5 12 5 5 9-11"/></svg>Join in one scan, no app store, no password</li>
+      <li class="flex gap-3"><svg viewBox="0 0 24 24" class="icon-sm mt-0.5" style="stroke:#D7FF3E"><path d="m5 12 5 5 9-11"/></svg>See the whole night from every other guest's angle</li>
+      <li class="flex gap-3"><svg viewBox="0 0 24 24" class="icon-sm mt-0.5" style="stroke:#D7FF3E"><path d="m5 12 5 5 9-11"/></svg>One selfie, then download every photo you're in</li>
+    </ul>
+  </div></div>
+</section>
+
+<!-- ===== ENGINE / TRUST ===== -->
+<section id="engine" class="py-24">
+  <div class="reveal grid lg:grid-cols-[1fr_auto] gap-8 items-end">
+    <div>
+      <p class="eyebrow mb-3">Under the hood</p>
+      <h2 class="font-display text-4xl font-bold tracking-tight max-w-xl leading-[1.05]">Self-hosted engine. Your photos stay yours.</h2>
+      <p class="text-white/55 mt-5 max-w-xl leading-relaxed">The AI runs on a self-hosted Immich engine behind our own backend, pointed at storage you control. Face detection, semantic search, and OCR happen on infrastructure you can hold, not a black box you rent.</p>
+    </div>
+    <div class="flex gap-3 font-mono text-xs text-white/40">
+      <span class="rounded-full px-3 py-1.5 bg-white/[0.04] border border-white/10">Immich engine</span>
+      <span class="rounded-full px-3 py-1.5 bg-white/[0.04] border border-white/10">NestJS API</span>
+      <span class="rounded-full px-3 py-1.5 bg-white/[0.04] border border-white/10">your storage</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section id="start" class="py-28">
+  <div class="reveal bezel vf"><div class="core p-14 text-center relative overflow-hidden">
+    <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-white/[0.04] border border-white/10 mb-6">
+      <span class="w-1.5 h-1.5 rounded-full bg-coral rec"></span><span class="eyebrow">Roll the cameras</span>
+    </div>
+    <h2 class="font-display text-5xl md:text-6xl font-bold tracking-[-0.03em] leading-[0.95]">Be our<br>camera crew.</h2>
+    <p class="text-white/55 text-lg mt-6 max-w-md mx-auto">Set up your first event in under a minute. Your guests do the rest.</p>
+    <a href="#" class="cta group inline-flex items-center gap-3 bg-lime text-ink font-semibold pl-7 pr-2 py-2.5 rounded-full mt-9">
+      Start an event
+      <span class="ico w-9 h-9 rounded-full bg-ink/10 grid place-items-center"><svg viewBox="0 0 24 24" class="icon-sm" style="stroke:#070708"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+    </a>
+  </div></div>
+</section>
+
+</main>
+
+<footer class="relative z-10 border-t border-white/10">
+  <div class="max-w-[1240px] mx-auto px-6 py-10 flex items-center justify-between flex-wrap gap-4">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-full bg-lime grid place-items-center"><div class="w-2.5 h-2.5 rounded-full bg-ink rec"></div></div>
+      <span class="font-display font-bold">BOCC</span>
+      <span class="text-white/35 text-sm">Be Our Camera Crew</span>
+    </div>
+    <span class="text-white/30 text-sm font-mono">one shared roll, every angle</span>
+  </div>
+</footer>
+
+<script>
+  const io = new IntersectionObserver((es)=>{
+    es.forEach((e)=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold:0.12 });
+  document.querySelectorAll('.reveal').forEach((el)=>io.observe(el));
+</script>
+</body>
+</html>

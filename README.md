@@ -170,14 +170,37 @@ small test sets.
 | `npm run build -w @bocc/shared` | build the shared package |
 | `node scripts/setup-immich.mjs` | provision Immich + wire the API |
 | `node scripts/demo-face-match.mjs` | end-to-end real face-match demo |
+| `node scripts/create-admin.mjs <email> <pw> <name>` | create / promote the super admin |
+
+## Accounts & roles
+
+- **Guests are account-free.** Joining an event, uploading, viewing the gallery, and find-me
+  need no login (the host decides each event's visibility: PRIVATE / UNLISTED / PUBLIC).
+- **Hosts log in** to create and manage events. Each event is owned by its host; only the
+  owner (or an admin) can change it. `POST /auth/signup` then `POST /auth/login` return a JWT.
+- **Super admin** (role `ADMIN`) sees and edits everything across the platform via `/admin/*`
+  and the web admin area. Create one:
+
+  ```bash
+  node scripts/create-admin.mjs admin@bocc.app "a-strong-password" "Super Admin"
+  ```
+
+Set a strong `JWT_SECRET` in `apps/api/.env` for anything beyond local dev.
 
 ## API surface
 
-`POST /events` · `GET /events/:idOrSlug` · `PATCH /events/:id` · `POST /events/:id/go-live`
-· `GET /events/:id/stats` · `GET /events/:id/moderation` · `POST /events/:idOrSlug/join`
+**Auth:** `POST /auth/signup` · `POST /auth/login` · `GET /auth/me`
+**Host (Bearer, owner-scoped):** `POST /events` · `GET /events/mine` · `PATCH /events/:id`
+· `POST /events/:id/go-live` · `GET /events/:id/stats` · `GET /events/:id/moderation`
+**Admin (Bearer + ADMIN):** `GET /admin/overview` · `GET/PATCH/DELETE /admin/events[/:id]`
+· `GET /admin/users` · `PATCH /admin/users/:id/role`
+**Guest (public):** `GET /events/:idOrSlug` · `POST /events/:idOrSlug/join`
 · `POST /events/:idOrSlug/photos` (multipart) · `GET /events/:idOrSlug/gallery`
-· `POST /events/:idOrSlug/find-me` (multipart) ·
-`GET /events/:eventId/photos/:photoId/thumb|original` (media proxy) · `GET /health`
+· `POST /events/:idOrSlug/find-me` (multipart)
+**Media proxy:** `GET /events/:eventId/photos/:photoId/thumb|original` · `GET /health`
+
+Each event's `stats` includes `storageBytes` (summed per-photo file size) and photo counts, so
+hosts and the admin can see how much each event holds.
 
 ---
 

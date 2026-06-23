@@ -77,6 +77,73 @@ export interface EventStats {
   photos: number;
   pending: number;
   faces: number;
+  storageBytes: number;
+}
+
+// ---- auth ----
+
+export type UserRole = "USER" | "ADMIN";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt?: string;
+}
+
+export interface AuthResult {
+  token: string;
+  user: AuthUser;
+}
+
+/** An event owned by the signed-in host (GET /events/mine), with inline stats. */
+export interface MineEvent extends BoccEvent {
+  stats: EventStats;
+}
+
+// ---- admin ----
+
+export interface AdminOverview {
+  totals: {
+    users: number;
+    events: number;
+    photos: number;
+    pendingPhotos: number;
+    members: number;
+    faces: number;
+    storageBytes: number;
+  };
+  eventsByStatus: {
+    DRAFT: number;
+    LIVE: number;
+    ENDED: number;
+  };
+  recentEvents: AdminEvent[];
+}
+
+export interface AdminEvent {
+  id: string;
+  name: string;
+  slug: string;
+  type?: EventType;
+  status: EventStatus;
+  visibility: Visibility;
+  createdAt?: string;
+  startsAt?: string;
+  host: { id: string; email: string; name: string } | null;
+  photos: number;
+  crew: number;
+  storageBytes: number;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt?: string;
+  events: number;
 }
 
 export interface Member {

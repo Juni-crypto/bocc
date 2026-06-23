@@ -4,18 +4,51 @@
 // frontend never talks to Immich directly - everything is proxied here.
 
 import type {
+  AdminEvent,
+  AdminOverview,
+  AdminUser,
+  AuthResult,
+  AuthUser,
   BoccEvent,
   CreateEventDto,
   EventStats,
   FindMeResult,
   GalleryPage,
   JoinResult,
+  MineEvent,
   ModerationQueue,
+  UserRole,
 } from "./types";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
   "http://localhost:4000/api";
+
+const AUTH_STORAGE_KEY = "bocc_auth";
+
+/** Read the persisted bearer token from localStorage (browser only). */
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { token?: string };
+    return parsed?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build an Authorization header. Pass a token explicitly (server components,
+ * tests) or omit it to read the stored token in the browser.
+ */
+function authHeader(token?: string): Record<string, string> {
+  const t = token ?? getStoredToken();
+  return t ? { authorization: `Bearer ${t}` } : {};
+}
+
+export { AUTH_STORAGE_KEY };
 
 class ApiError extends Error {
   constructor(
@@ -62,37 +95,103 @@ async function request<T>(
 }
 
 export const api = {
-  // ---- host: create & manage ----
-  createEvent: (dto: CreateEventDto) =>
-    request<BoccEvent>("/events", { method: "POST", json: dto }),
+  // ---- auth (token-free; they mint the token) ----
+  signup: (body: { email: string; password: string; name: string }) =>
+    request<AuthResult>("/auth/signup", { method: "POST", json: body }),
 
+  login: (body: { email: string; password: string }) =>
+    request<AuthResult>("/auth/login", { method: "POST", json: body }),
+
+  me: (token?: string) =>
+    request<AuthUser>("/auth/me", { headers: authHeader(token) }),
+
+  // ---- host: create & manage (Bearer required) ----
+  createEvent: (dto: CreateEventDto, token?: string) =>
+    request<BoccEvent>("/events", {
+      method: "POST",
+      json: dto,
+      headers: authHeader(token),
+    }),
+
+  // Public read of a single event (guest gallery + SSR headers). No token.
   getEvent: (idOrSlug: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(idOrSlug)}`),
 
-  updateEvent: (id: string, dto: Partial<CreateEventDto>) =>
+  listMine: (token?: string) =>
+    request<MineEvent[]>("/events/mine", { headers: authHeader(token) }),
+
+  updateEvent: (id: string, dto: Partial<CreateEventDto>, token?: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(id)}`, {
       method: "PATCH",
       json: dto,
+      headers: authHeader(token),
     }),
 
-  goLive: (id: string) =>
+  goLive: (id: string, token?: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(id)}/go-live`, {
       method: "POST",
+      headers: authHeader(token),
     }),
 
-  stats: (id: string) =>
-    request<EventStats>(`/events/${encodeURIComponent(id)}/stats`),
+  stats: (id: string, token?: string) =>
+    request<EventStats>(`/events/${encodeURIComponent(id)}/stats`, {
+      headers: authHeader(token),
+    }),
 
-  moderation: (id: string) =>
-    request<ModerationQueue>(`/events/${encodeURIComponent(id)}/moderation`),
+  moderation: (id: string, token?: string) =>
+    request<ModerationQueue>(`/events/${encodeURIComponent(id)}/moderation`, {
+      headers: authHeader(token),
+    }),
 
-  moderate: (id: string, photoId: string, decision: "approve" | "reject") =>
+  moderate: (
+    id: string,
+    photoId: string,
+    decision: "approve" | "reject",
+    token?: string,
+  ) =>
     request<unknown>(
       `/events/${encodeURIComponent(id)}/moderation/${encodeURIComponent(
         photoId,
       )}/${decision}`,
-      { method: "POST" },
+      { method: "POST", headers: authHeader(token) },
     ),
+
+  // ---- admin (Bearer + role ADMIN) ----
+  admin: {
+    overview: (token?: string) =>
+      request<AdminOverview>("/admin/overview", { headers: authHeader(token) }),
+
+    events: (token?: string) =>
+      request<AdminEvent[]>("/admin/events", { headers: authHeader(token) }),
+
+    eventDetail: (id: string, token?: string) =>
+      request<AdminEvent>(`/admin/events/${encodeURIComponent(id)}`, {
+        headers: authHeader(token),
+      }),
+
+    updateEvent: (id: string, dto: Partial<BoccEvent>, token?: string) =>
+      request<AdminEvent>(`/admin/events/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        json: dto,
+        headers: authHeader(token),
+      }),
+
+    deleteEvent: (id: string, token?: string) =>
+      request<unknown>(`/admin/events/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeader(token),
+      }),
+
+    users: (token?: string) =>
+      request<AdminUser[]>("/admin/users", { headers: authHeader(token) }),
+
+    setRole: (id: string, role: UserRole, token?: string) =>
+      request<AdminUser>(`/admin/users/${encodeURIComponent(id)}/role`, {
+        method: "PATCH",
+        json: { role },
+        headers: authHeader(token),
+      }),
+  },
 
   // ---- guests ----
   join: (

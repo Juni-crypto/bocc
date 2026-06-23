@@ -7,6 +7,8 @@ import { QrCode } from "@/components/QrCode";
 import { RecDot } from "@/components/RecDot";
 import { Reveal } from "@/components/Reveal";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { formatBytes } from "@/lib/format";
 import type { EventStats, Photo } from "@/lib/types";
 
 interface HostDashboardProps {
@@ -15,10 +17,16 @@ interface HostDashboardProps {
   title: string;
   joinUrl: string;
   shareLabel: string;
-  initialStats: EventStats;
-  initialPending: Photo[];
   live: boolean;
 }
+
+const EMPTY_STATS: EventStats = {
+  crew: 0,
+  photos: 0,
+  pending: 0,
+  faces: 0,
+  storageBytes: 0,
+};
 
 export function HostDashboard({
   eventId,
@@ -26,24 +34,23 @@ export function HostDashboard({
   title,
   joinUrl,
   shareLabel,
-  initialStats,
-  initialPending,
   live,
 }: HostDashboardProps) {
-  const [stats, setStats] = useState<EventStats>(initialStats);
-  const [pending, setPending] = useState<Photo[]>(initialPending);
+  const { token } = useAuth();
+  const [stats, setStats] = useState<EventStats>(EMPTY_STATS);
+  const [pending, setPending] = useState<Photo[]>([]);
   const [recent, setRecent] = useState<Photo[]>([]);
   const [copied, setCopied] = useState(false);
 
-  // Live-poll stats + moderation queue when we have a real event id.
+  // Live-poll stats + moderation queue when we have a real event id + token.
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId || !token) return;
     let active = true;
     const tick = async () => {
       try {
         const [next, queue, gallery] = await Promise.all([
-          api.stats(eventId),
-          api.moderation(eventId).catch(() => null),
+          api.stats(eventId, token),
+          api.moderation(eventId, token).catch(() => null),
           api.gallery(slug, { take: 8 }).catch(() => null),
         ]);
         if (!active) return;
@@ -60,19 +67,19 @@ export function HostDashboard({
       active = false;
       clearInterval(interval);
     };
-  }, [eventId, slug]);
+  }, [eventId, slug, token]);
 
   const approveAll = async () => {
-    if (!eventId || !pending.length) return;
+    if (!eventId || !token || !pending.length) return;
     const ids = pending.map((p) => p.id);
     setPending([]);
     await Promise.all(
-      ids.map((pid) => api.moderate(eventId, pid, "approve").catch(() => null)),
+      ids.map((pid) => api.moderate(eventId, pid, "approve", token).catch(() => null)),
     );
     try {
       const [next, queue] = await Promise.all([
-        api.stats(eventId),
-        api.moderation(eventId),
+        api.stats(eventId, token),
+        api.moderation(eventId, token),
       ]);
       setStats(next);
       setPending(queue.photos);
@@ -140,10 +147,10 @@ export function HostDashboard({
 
         {/* live stats + feed */}
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
             <Reveal>
               <Bezel coreClassName="p-4 sm:p-6">
-                <div className="font-display text-3xl font-bold text-lime sm:text-5xl">
+                <div className="font-display text-3xl font-bold text-lime sm:text-4xl">
                   {stats.crew}
                 </div>
                 <div className="mt-2 text-sm text-white/55">crew joined</div>
@@ -151,7 +158,7 @@ export function HostDashboard({
             </Reveal>
             <Reveal index={1}>
               <Bezel coreClassName="p-4 sm:p-6">
-                <div className="font-display text-3xl font-bold sm:text-5xl">
+                <div className="font-display text-3xl font-bold sm:text-4xl">
                   {stats.photos}
                 </div>
                 <div className="mt-2 text-sm text-white/55">photos pooled</div>
@@ -159,10 +166,18 @@ export function HostDashboard({
             </Reveal>
             <Reveal index={2}>
               <Bezel coreClassName="p-4 sm:p-6">
-                <div className="font-display text-3xl font-bold sm:text-5xl">
+                <div className="font-display text-3xl font-bold sm:text-4xl">
                   {stats.faces}
                 </div>
                 <div className="mt-2 text-sm text-white/55">faces found</div>
+              </Bezel>
+            </Reveal>
+            <Reveal index={3}>
+              <Bezel coreClassName="p-4 sm:p-6">
+                <div className="font-display text-3xl font-bold sm:text-4xl">
+                  {formatBytes(stats.storageBytes)}
+                </div>
+                <div className="mt-2 text-sm text-white/55">storage used</div>
               </Bezel>
             </Reveal>
           </div>

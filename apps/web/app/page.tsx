@@ -1,13 +1,10 @@
-import Link from "next/link";
 import { Bezel } from "@/components/Bezel";
 import { Reveal } from "@/components/Reveal";
+import { StartEventCta } from "@/components/StartEventCta";
 
 /* ---- inline line icons (no emoji, consistent 1.5 stroke) ---- */
 const ico = "h-[22px] w-[22px] fill-none stroke-lime [stroke-width:1.5] [stroke-linecap:round] [stroke-linejoin:round]";
-const ArrowUR = ({ dark = false }: { dark?: boolean }) => (
-  <svg viewBox="0 0 24 24" className={`h-[18px] w-[18px] fill-none [stroke-width:1.5] [stroke-linecap:round] [stroke-linejoin:round] ${dark ? "stroke-ink" : "stroke-lime"}`}><path d="M7 17 17 7M9 7h8v8" /></svg>
-);
-const QrIcon = () => (<svg viewBox="0 0 24 24" className={ico}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1" /></svg>);
+const QrIcon = () =>(<svg viewBox="0 0 24 24" className={ico}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><path d="M14 14h3v3M21 14v.01M14 21h.01M21 21v-4M17 21h1" /></svg>);
 const UsersIcon = () => (<svg viewBox="0 0 24 24" className={ico}><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" /><circle cx="9.5" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg>);
 const CamIcon = () => (<svg viewBox="0 0 24 24" className={ico}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>);
 const LayersIcon = () => (<svg viewBox="0 0 24 24" className={ico}><path d="M3 7h18M3 12h18M3 17h18" /></svg>);
@@ -58,10 +55,7 @@ export default function LandingPage() {
           </Reveal>
           <Reveal index={3}>
             <div className="mt-9 flex flex-wrap gap-3">
-              <Link href="/create" className="cta group inline-flex items-center gap-3 rounded-full bg-lime py-2 pl-6 pr-2 font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                Start an event
-                <span className="ico grid h-9 w-9 place-items-center rounded-full bg-ink/10"><ArrowUR dark /></span>
-              </Link>
+              <StartEventCta className="py-2 pl-6 pr-2" />
               <a href="#how" className="cta rounded-full border border-white/10 bg-white/[0.04] px-6 py-3.5 transition hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-ink">See how it works</a>
             </div>
           </Reveal>
@@ -244,10 +238,7 @@ export default function LandingPage() {
               <p className="mx-auto mt-6 max-w-md text-lg text-white/55">
                 Set up your first event in under a minute. Your guests do the rest.
               </p>
-              <Link href="/create" className="cta group mt-9 inline-flex items-center gap-3 rounded-full bg-lime py-2.5 pl-7 pr-2 font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                Start an event
-                <span className="ico grid h-9 w-9 place-items-center rounded-full bg-ink/10"><ArrowUR dark /></span>
-              </Link>
+              <StartEventCta className="mt-9 py-2.5 pl-7 pr-2" />
             </div>
           </Bezel>
         </Reveal>

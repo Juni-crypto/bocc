@@ -63,6 +63,10 @@ model Event {
   venue     String?
   startsAt  DateTime?
 
+  // owner (host). Created via an authenticated account.
+  hostUserId String?
+  host       User?   @relation(fields: [hostUserId], references: [id], onDelete: SetNull)
+
   // join
   slug      String   @unique // used in QR / share link: bocc.app/e/<slug>
   joinCode  String?  // optional short code
@@ -112,6 +116,23 @@ model Event {
   photos  Photo[]
 
   @@index([status])
+  @@index([hostUserId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  events Event[]
 }
 
 model Member {
@@ -144,6 +165,7 @@ model Photo {
   immichAssetId String       @unique
   status        PhotoStatus  @default(APPROVED)
   isVideo       Boolean      @default(false)
+  sizeBytes     Int          @default(0)
 
   takenAt   DateTime?
   lat       Float?

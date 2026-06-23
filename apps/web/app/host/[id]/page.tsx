@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuthGate } from "@/components/AuthGate";
 import { HostDashboard } from "./HostDashboard";
-import { loadEvent, loadStats } from "@/lib/eventData";
-import type { EventStats, Photo } from "@/lib/types";
-import { api } from "@/lib/api";
+import { loadEvent } from "@/lib/eventData";
 
 export const metadata: Metadata = {
   title: "Host dashboard · BOCC",
@@ -40,28 +39,18 @@ export default async function HostPage({
     );
   }
 
-  const emptyStats: EventStats = { crew: 0, photos: 0, pending: 0, faces: 0 };
-  const initialStats = (await loadStats(event.id)) ?? emptyStats;
-
-  let initialPending: Photo[] = [];
-  try {
-    initialPending = (await api.moderation(event.id)).photos;
-  } catch {
-    /* no moderation data yet */
-  }
-
   const shareLabel = event.joinUrl.replace(/^https?:\/\//, "");
 
   return (
-    <HostDashboard
-      eventId={event.id}
-      slug={event.slug}
-      title={event.name}
-      joinUrl={event.joinUrl}
-      shareLabel={shareLabel}
-      initialStats={initialStats}
-      initialPending={initialPending}
-      live={event.status === "LIVE"}
-    />
+    <AuthGate redirectTo={`/host/${event.slug}`}>
+      <HostDashboard
+        eventId={event.id}
+        slug={event.slug}
+        title={event.name}
+        joinUrl={event.joinUrl}
+        shareLabel={shareLabel}
+        live={event.status === "LIVE"}
+      />
+    </AuthGate>
   );
 }

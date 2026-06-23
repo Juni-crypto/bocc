@@ -31,11 +31,12 @@ export async function loadEventHeader(slug: string): Promise<EventHeader> {
       found: false,
     };
   }
-  const stats = await loadStats(event.id);
+  // public counts come straight off the public event payload (no auth needed)
+  const ev = event as BoccEvent & { photoCount?: number; crew?: number };
   return {
     title: event.name,
-    photos: stats?.photos ?? 0,
-    crew: stats?.crew ?? 0,
+    photos: ev.photoCount ?? 0,
+    crew: ev.crew ?? 0,
     live: event.status === "LIVE",
     slug: event.slug,
     found: true,

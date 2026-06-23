@@ -9,6 +9,7 @@ import { Segmented } from "@/components/Segmented";
 import { Slider } from "@/components/Slider";
 import { ToggleRow } from "@/components/Toggle";
 import { api, ApiError, API_BASE } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type {
   CreateEventDto,
   DownloadPolicy,
@@ -100,6 +101,7 @@ const inputCls =
 
 export function CreateForm() {
   const router = useRouter();
+  const { token } = useAuth();
   const [f, setF] = useState<FormState>(INITIAL);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,8 +149,8 @@ export function CreateForm() {
     setSubmitting(true);
     setError(null);
     try {
-      const event = await api.createEvent(dto());
-      await api.goLive(event.id);
+      const event = await api.createEvent(dto(), token ?? undefined);
+      await api.goLive(event.id, token ?? undefined);
       router.push(`/host/${event.slug}`);
     } catch (e) {
       const msg =

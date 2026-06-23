@@ -23,7 +23,7 @@ export class EventsService {
 
   // ---- creation & management -------------------------------------------------
 
-  async create(dto: CreateEventDto) {
+  async create(dto: CreateEventDto, hostUserId: string) {
     const slug = slugify(dto.name);
     const albumId = await this.immich.createAlbum(dto.name);
 
@@ -33,13 +33,27 @@ export class EventsService {
         startsAt: dto.startsAt ? new Date(dto.startsAt) : undefined,
         slug,
         immichAlbumId: albumId,
+        hostUserId,
       },
     });
     return this.withJoinUrl(event);
   }
 
-  async update(id: string, dto: UpdateEventDto) {
-    await this.getOrThrow(id);
+  async listMine(userId: string) {
+    const events = await this.prisma.event.findMany({
+      where: { hostUserId: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return Promise.all(
+      events.map(async (e) => ({
+        ...this.withJoinUrl(e),
+        stats: await this.computeStats(e.id),
+      })),
+    );
+  }
+
+  async update(id: string, dto: UpdateEventDto, userId: string) {
+    await this.ownedOrThrow(id, userId);
     const event = await this.prisma.event.update({
       where: { id },
       data: {
@@ -50,8 +64,8 @@ export class EventsService {
     return this.withJoinUrl(event);
   }
 
-  async goLive(id: string) {
-    await this.getOrThrow(id);
+  async goLive(id: string, userId: string) {
+    await this.ownedOrThrow(id, userId);
     const event = await this.prisma.event.update({
       where: { id },
       data: { status: 'LIVE' },
@@ -61,21 +75,30 @@ export class EventsService {
 
   async getPublic(idOrSlug: string) {
     const event = await this.resolve(idOrSlug);
-    return this.withJoinUrl(event);
+    // public, non-sensitive counts so the guest gallery header is accurate
+    // without needing the owner-only /stats endpoint.
+    const [photoCount, crew] = await Promise.all([
+      this.prisma.photo.count({ where: { eventId: event.id, status: 'APPROVED' } }),
+      this.prisma.member.count({ where: { eventId: event.id } }),
+    ]);
+    return { ...this.withJoinUrl(event), photoCount, crew };
   }
 
-  async stats(id: string) {
-    await this.getOrThrow(id);
-    const [crew, photos, pending] = await Promise.all([
+  async stats(id: string, userId: string) {
+    await this.ownedOrThrow(id, userId);
+    return this.computeStats(id);
+  }
+
+  /** Stats for one event (crew, photo counts, faces, total storage). */
+  async computeStats(id: string) {
+    const [crew, photos, pending, agg, faces] = await Promise.all([
       this.prisma.member.count({ where: { eventId: id } }),
       this.prisma.photo.count({ where: { eventId: id, status: 'APPROVED' } }),
       this.prisma.photo.count({ where: { eventId: id, status: 'PENDING' } }),
+      this.prisma.photo.aggregate({ where: { eventId: id }, _sum: { sizeBytes: true } }),
+      this.prisma.member.count({ where: { eventId: id, immichPersonId: { not: null } } }),
     ]);
-    // distinct face clusters resolved so far
-    const faces = await this.prisma.member.count({
-      where: { eventId: id, immichPersonId: { not: null } },
-    });
-    return { crew, photos, pending, faces };
+    return { crew, photos, pending, faces, storageBytes: agg._sum.sizeBytes ?? 0 };
   }
 
   // ---- guests ----------------------------------------------------------------
@@ -146,11 +169,12 @@ export class EventsService {
           immichAssetId: asset.id,
           status: moderated ? PhotoStatus.PENDING : PhotoStatus.APPROVED,
           isVideo: !!dto.isVideo,
+          sizeBytes: file.size ?? 0,
           takenAt: dto.takenAt ? new Date(dto.takenAt) : undefined,
           lat,
           lng,
         },
-        update: { eventId: event.id, memberId: member.id },
+        update: { eventId: event.id, memberId: member.id, sizeBytes: file.size ?? 0 },
       });
       created.push(photo);
     }
@@ -173,8 +197,8 @@ export class EventsService {
     };
   }
 
-  async moderationQueue(id: string) {
-    await this.getOrThrow(id);
+  async moderationQueue(id: string, userId: string) {
+    await this.ownedOrThrow(id, userId);
     const photos = await this.prisma.photo.findMany({
       where: { eventId: id, status: 'PENDING' },
       orderBy: { createdAt: 'asc' },
@@ -182,8 +206,8 @@ export class EventsService {
     return { pending: photos.length, photos: photos.map((p) => this.publicPhoto(p)) };
   }
 
-  async moderate(id: string, photoId: string, approve: boolean) {
-    await this.getOrThrow(id);
+  async moderate(id: string, photoId: string, approve: boolean, userId: string) {
+    await this.ownedOrThrow(id, userId);
     return this.prisma.photo.update({
       where: { id: photoId },
       data: { status: approve ? PhotoStatus.APPROVED : PhotoStatus.REJECTED },
@@ -313,6 +337,14 @@ export class EventsService {
   private async getOrThrow(id: string): Promise<Event> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException('Event not found.');
+    return event;
+  }
+
+  private async ownedOrThrow(id: string, userId: string): Promise<Event> {
+    const event = await this.getOrThrow(id);
+    if (event.hostUserId !== userId) {
+      throw new ForbiddenException('You do not own this event.');
+    }
     return event;
   }
 
