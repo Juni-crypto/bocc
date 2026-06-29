@@ -78,15 +78,30 @@ jobs:
           prerelease: ${{ github.event.inputs.prerelease || false }}
           generate_release_notes: true
           body: |
-            ### BOCC Android APK
+            ### BOCC ${{ env.TAG }}
 
-            Built from source by GitHub Actions (no manual tampering). Verify with the
-            checksum in `SHA256SUMS.txt`, and see the VirusTotal analysis link below if a
-            `VT_API_KEY` secret is configured.
+            **Android APK** and **container images to run the whole system**, all built
+            from source by GitHub Actions (no manual tampering). Verify the APK with the
+            checksum in `SHA256SUMS.txt`, and see the VirusTotal analysis link below if the
+            `VT_API_KEY` secret is set.
 
-            Install: download `bocc-${{ env.TAG }}.apk` and open it on an Android device
-            (allow installing from unknown sources). The app talks to whatever API you point
+            #### Android app
+            Download `bocc-${{ env.TAG }}.apk` and open it on an Android device (allow
+            installing from unknown sources). It talks to whatever API you point
             `EXPO_PUBLIC_API_URL` at.
+
+            #### Run the full system from prebuilt images (GHCR)
+            ```bash
+            # published by the docker-publish workflow on this same tag
+            curl -O https://raw.githubusercontent.com/Juni-crypto/bocc/${{ env.TAG }}/docker-compose.ghcr.yml
+            curl -O https://raw.githubusercontent.com/Juni-crypto/bocc/${{ env.TAG }}/.env.prod.example
+            cp .env.prod.example .env.prod   # set JWT_SECRET etc.
+            IMAGE_TAG=${{ env.TAG }} docker compose -f docker-compose.ghcr.yml --env-file .env.prod up -d
+            # web -> http://localhost:3000   api -> http://localhost:4000/api
+            ```
+            Images: `ghcr.io/juni-crypto/bocc-api:${{ env.TAG }}` and
+            `ghcr.io/juni-crypto/bocc-web:${{ env.TAG }}`. Or deploy a single VM with
+            `infra/terraform` (terraform plan + apply).
           files: |
             ${{ env.APK_PATH }}
             SHA256SUMS.txt

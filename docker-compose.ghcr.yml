@@ -1,0 +1,125 @@
+# Run the WHOLE BOCC system from prebuilt images on GHCR (no local build).
+#
+# The api + web images are published by .github/workflows/docker-publish.yml to
+# ghcr.io/juni-crypto/bocc-api and ghcr.io/juni-crypto/bocc-web. Everything else
+# (db, Immich) uses upstream public images. DB and storage stay in containers.
+#
+# Bring up:
+#   cp .env.prod.example .env.prod   # then edit
+#   docker compose -f docker-compose.ghcr.yml --env-file .env.prod up -d
+#
+# Pin a version with IMAGE_TAG (defaults to latest), e.g. IMAGE_TAG=v0.1.0.
+#
+# NOTE: the web image bakes NEXT_PUBLIC_API_URL at build time. The published
+# image defaults to http://localhost:4000/api, which is correct when you browse
+# the stack from the same host. To point the web client at a different public
+# API origin, build the web image yourself (docker-compose.prod.yml) or rebuild
+# with the NEXT_PUBLIC_API_URL build arg.
+
+name: bocc
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-bocc}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bocc}
+      POSTGRES_DB: ${DB_NAME:-bocc}
+    volumes:
+      - bocc-db-data:/var/lib/postgresql/data
+    networks: [bocc]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bocc} -d ${DB_NAME:-bocc}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ghcr.io/juni-crypto/bocc-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-bocc}:${DB_PASSWORD:-bocc}@db:5432/${DB_NAME:-bocc}?schema=public
+      IMMICH_ENABLED: ${IMMICH_ENABLED:-false}
+      IMMICH_URL: http://immich-server:2283
+      IMMICH_API_KEY: ${IMMICH_API_KEY:-}
+      API_PUBLIC_URL: ${PUBLIC_API_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: "4000"
+    ports:
+      - "4000:4000"
+    networks: [bocc]
+
+  web:
+    image: ghcr.io/juni-crypto/bocc-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "3000:3000"
+    networks: [bocc]
+
+  immich-server:
+    container_name: bocc_immich_server
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v1.124.2}
+    volumes:
+      - bocc-immich-upload:/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      DB_HOSTNAME: immich-db
+      DB_USERNAME: ${IMMICH_DB_USERNAME:-immich}
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD:-immich}
+      DB_DATABASE_NAME: ${IMMICH_DB_DATABASE_NAME:-immich}
+      REDIS_HOSTNAME: immich-redis
+      UPLOAD_LOCATION: /data
+    depends_on: [immich-redis, immich-db]
+    restart: always
+    networks: [bocc]
+    healthcheck:
+      disable: false
+
+  immich-machine-learning:
+    container_name: bocc_immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v1.124.2}
+    volumes:
+      - bocc-immich-model-cache:/cache
+    restart: always
+    networks: [bocc]
+    healthcheck:
+      disable: false
+
+  immich-redis:
+    container_name: bocc_immich_redis
+    image: docker.io/valkey/valkey:9@sha256:4963247afc4cd33c7d3b2d2816b9f7f8eeebab148d29056c2ca4d7cbc966f2d9
+    restart: always
+    networks: [bocc]
+    healthcheck:
+      test: redis-cli ping || exit 1
+
+  immich-db:
+    container_name: bocc_immich_postgres
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    environment:
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD:-immich}
+      POSTGRES_USER: ${IMMICH_DB_USERNAME:-immich}
+      POSTGRES_DB: ${IMMICH_DB_DATABASE_NAME:-immich}
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - bocc-immich-db:/var/lib/postgresql/data
+    shm_size: 128mb
+    restart: always
+    networks: [bocc]
+    healthcheck:
+      disable: false
+
+networks:
+  bocc:
+    driver: bridge
+
+volumes:
+  bocc-db-data:
+  bocc-immich-upload:
+  bocc-immich-model-cache:
+  bocc-immich-db:

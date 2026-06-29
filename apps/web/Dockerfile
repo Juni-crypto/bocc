@@ -10,7 +10,7 @@
 # reliability inside a monorepo.
 
 # ---------- builder ----------
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 ARG NEXT_PUBLIC_API_URL=http://localhost:4000/api
@@ -23,13 +23,18 @@ COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN npm ci
+# npm ci can omit the native binaries for cross-platform optional deps when the
+# lockfile was generated on a different OS (npm/cli#4828). Tailwind v4 pulls
+# lightningcss + @tailwindcss/oxide, whose platform .node modules then go
+# missing at `next build`. Re-resolve them for THIS build platform.
+RUN npm install --no-save lightningcss @tailwindcss/oxide
 
 # Bring in the source and build the web workspace.
 COPY . .
 RUN npm run build -w @bocc/web
 
 # ---------- runner ----------
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app/apps/web
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

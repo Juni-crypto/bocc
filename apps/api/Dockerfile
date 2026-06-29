@@ -9,11 +9,12 @@
 # entrypoint runs `prisma migrate deploy` before booting the server.
 
 # ---------- builder ----------
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# OpenSSL is needed by Prisma's engines on alpine.
-RUN apk add --no-cache openssl
+# OpenSSL + CA certs are needed by Prisma's engines on Debian.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 # Install all workspace dependencies first (better layer caching).
 COPY package.json package-lock.json ./
@@ -28,20 +29,23 @@ RUN npm run prisma:generate -w @bocc/api \
   && npm run build -w @bocc/api
 
 # ---------- runner ----------
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
 # OpenSSL again for the Prisma query engine at runtime.
-RUN apk add --no-cache openssl
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 # Carry the full installed dependency tree (Prisma client + CLI live here) plus
 # the compiled API and its Prisma schema/migrations.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+# NOTE: npm workspaces hoist all deps to the root node_modules above, so
+# apps/api/node_modules does not exist. Node resolves api deps from the root
+# tree via the normal upward lookup; no per-workspace node_modules to copy.
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
