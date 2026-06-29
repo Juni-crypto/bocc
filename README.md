@@ -9,6 +9,10 @@ auto-highlights on top.
 
 </div>
 
+> **Just want to run it?** Read [QUICKSTART.md](./QUICKSTART.md) - one Docker command
+> brings the whole system up (database + storage included), then open
+> http://localhost:3000.
+
 ---
 
 ## Contents

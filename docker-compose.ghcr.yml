@@ -37,6 +37,9 @@ services:
 
   api:
     image: ghcr.io/juni-crypto/bocc-api:${IMAGE_TAG:-latest}
+    # images are published for linux/amd64; on Apple Silicon Docker runs them
+    # under emulation. (Native Linux/Intel hosts ignore this.)
+    platform: linux/amd64
     restart: unless-stopped
     depends_on:
       db:
@@ -55,6 +58,7 @@ services:
 
   web:
     image: ghcr.io/juni-crypto/bocc-web:${IMAGE_TAG:-latest}
+    platform: linux/amd64
     restart: unless-stopped
     depends_on: [api]
     ports:
