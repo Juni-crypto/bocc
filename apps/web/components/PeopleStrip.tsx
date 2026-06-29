@@ -53,28 +53,29 @@ export function PeopleStrip({ slug }: { slug: string }) {
           {people.map((p) => {
             const t = resolveThumb(p.thumbUrl);
             return (
-              <div
+              <Link
                 key={p.id}
-                className="w-16 shrink-0 text-center"
-                title={p.name ?? `Appears in ${p.photoCount} photos`}
+                href={`/e/${slug}/p/${p.id}`}
+                className="group w-16 shrink-0 text-center focus-visible:outline-none"
+                title={p.name ?? `See ${p.photoCount} photos of this person`}
               >
                 {t ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={t}
                     alt={p.name ?? "Detected person"}
-                    className="h-14 w-14 rounded-full object-cover ring-1 ring-white/15"
+                    className="h-14 w-14 rounded-full object-cover ring-1 ring-white/15 transition group-hover:ring-2 group-hover:ring-lime group-focus-visible:ring-2 group-focus-visible:ring-lime"
                     loading="lazy"
                   />
                 ) : (
-                  <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-xl">
+                  <span className="grid h-14 w-14 place-items-center rounded-full bg-white/10 text-xl ring-1 ring-white/15 transition group-hover:ring-2 group-hover:ring-lime">
                     🙂
                   </span>
                 )}
-                <span className="mt-1 block truncate text-[11px] text-white/55">
+                <span className="mt-1 block truncate text-[11px] text-white/55 group-hover:text-white">
                   {p.name ?? `${p.photoCount}`}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>

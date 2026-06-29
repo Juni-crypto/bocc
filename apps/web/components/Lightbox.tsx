@@ -38,6 +38,7 @@ export function Lightbox({
 }) {
   const item = items[index];
   const [deleting, setDeleting] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const touchX = useRef<number | null>(null);
 
   const prev = useCallback(() => {
@@ -62,6 +63,13 @@ export function Lightbox({
       document.body.style.overflow = prevOverflow;
     };
   }, [onClose, prev, next]);
+
+  // slideshow auto-advance
+  useEffect(() => {
+    if (!playing || items.length < 2) return;
+    const t = setInterval(next, 3500);
+    return () => clearInterval(t);
+  }, [playing, next, items.length]);
 
   if (!item) return null;
 
@@ -98,6 +106,21 @@ export function Lightbox({
           {index + 1} / {items.length}
         </span>
         <div className="flex items-center gap-2">
+          {items.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setPlaying((p) => !p)}
+              className={`grid h-10 w-10 place-items-center rounded-full border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime ${
+                playing
+                  ? "border-lime/50 bg-lime/15 text-lime"
+                  : "border-white/15 bg-white/[0.06] hover:bg-white/[0.12]"
+              }`}
+              aria-label={playing ? "Pause slideshow" : "Play slideshow"}
+              title={playing ? "Pause slideshow" : "Slideshow"}
+            >
+              {playing ? "⏸" : "▷"}
+            </button>
+          )}
           {full && (
             <a
               href={full}

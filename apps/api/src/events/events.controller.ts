@@ -162,6 +162,15 @@ export class EventsController {
     return this.events.listPeople(idOrSlug);
   }
 
+  // Click a face -> only that person's photos in this event.
+  @Get(':idOrSlug/people/:personId/photos')
+  personPhotos(
+    @Param('idOrSlug') idOrSlug: string,
+    @Param('personId') personId: string,
+  ) {
+    return this.events.personPhotos(idOrSlug, personId);
+  }
+
   @Get(':eventId/people/:personId/thumb')
   async personThumb(
     @Param('eventId') eventId: string,

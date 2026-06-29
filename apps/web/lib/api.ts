@@ -155,6 +155,14 @@ export const api = {
       `/events/${encodeURIComponent(idOrSlug)}/people`,
     ),
 
+  // only the photos a given detected person appears in
+  personPhotos: (idOrSlug: string, personId: string) =>
+    request<{ personId: string; count: number; photos: Photo[] }>(
+      `/events/${encodeURIComponent(idOrSlug)}/people/${encodeURIComponent(
+        personId,
+      )}/photos`,
+    ),
+
   // returning-guest self service: events joined + their pics, keyed by phone
   guestLookup: (phone: string) =>
     request<GuestLookup>(

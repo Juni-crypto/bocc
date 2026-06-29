@@ -130,6 +130,32 @@ export class EventsService {
     return { people };
   }
 
+  /** Only the photos a given detected person appears in, within this event. */
+  async personPhotos(idOrSlug: string, personId: string) {
+    const event = await this.resolve(idOrSlug);
+    if (!this.immich.isEnabled || !event.immichAlbumId) {
+      return { personId, count: 0, photos: [] };
+    }
+    const assetIds = await this.immich.getPersonAssetIds(
+      personId,
+      event.immichAlbumId,
+    );
+    const photos = await this.prisma.photo.findMany({
+      where: {
+        eventId: event.id,
+        status: 'APPROVED',
+        immichAssetId: { in: assetIds },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { member: { select: { name: true } } },
+    });
+    return {
+      personId,
+      count: photos.length,
+      photos: photos.map((p) => this.publicPhoto(p)),
+    };
+  }
+
   /** Fetch a face cluster's thumbnail bytes for the people proxy. */
   async personMedia(eventId: string, personId: string) {
     await this.getOrThrow(eventId);
