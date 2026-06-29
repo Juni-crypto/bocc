@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { MasonryGrid } from "@/components/MasonryGrid";
+import { GalleryGrid } from "@/components/GalleryGrid";
 import { PeopleStrip } from "@/components/PeopleStrip";
 import { Reveal } from "@/components/Reveal";
-import { loadEventHeader, loadGalleryItems } from "@/lib/eventData";
+import { loadEventHeader } from "@/lib/eventData";
 
 export async function generateMetadata({
   params,
@@ -21,10 +21,7 @@ export default async function GalleryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [header, items] = await Promise.all([
-    loadEventHeader(slug),
-    loadGalleryItems(slug),
-  ]);
+  const header = await loadEventHeader(slug);
 
   return (
     <section className="pb-28 pt-36">
@@ -64,32 +61,7 @@ export default async function GalleryPage({
         <PeopleStrip slug={slug} />
       </Reveal>
 
-      {items.length ? (
-        <Reveal>
-          <MasonryGrid items={items} />
-        </Reveal>
-      ) : (
-        <Reveal>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-16 text-center">
-            <p className="font-display text-2xl font-semibold">
-              {header.found ? "No photos yet" : "Event not found"}
-            </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
-              {header.found
-                ? "Be the first to add a shot. Join the crew, then upload from your camera roll."
-                : "We could not find this event. Check the link or ask the host for a fresh QR."}
-            </p>
-            {header.found && (
-              <Link
-                href={`/e/${slug}/add`}
-                className="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-lime px-5 py-3 text-sm font-semibold text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
-              >
-                Add the first photos
-              </Link>
-            )}
-          </div>
-        </Reveal>
-      )}
+      <GalleryGrid slug={slug} found={header.found} />
     </section>
   );
 }
