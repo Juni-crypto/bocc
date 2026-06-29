@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#050505"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
@@ -40,6 +42,14 @@
         {
           "photosPermission": "BOCC needs photo access so you can add your shots to the shared event gallery.",
           "cameraPermission": "BOCC uses the camera to take your find-me selfie."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
         }
       ]
     ],
