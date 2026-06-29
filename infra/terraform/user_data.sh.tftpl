@@ -1,0 +1,58 @@
+#!/bin/bash
+# BOCC single-VM bootstrap (cloud-init user_data).
+# Installs Docker + the compose plugin, clones the repo, writes .env.prod with
+# the instance's own public IP, and brings the whole containerized stack up.
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+
+# ---- Docker engine + compose plugin (official Docker apt repo) ----
+apt-get update -y
+apt-get install -y ca-certificates curl git
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+ARCH="$(dpkg --print-architecture)"
+. /etc/os-release
+echo "deb [arch=$${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $${VERSION_CODENAME} stable" \
+  > /etc/apt/sources.list.d/docker.list
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+systemctl enable --now docker
+usermod -aG docker ubuntu || true
+
+# ---- Clone the repo ----
+APP_DIR=/opt/bocc
+rm -rf "$${APP_DIR}"
+git clone --branch "${branch}" --depth 1 "${repo_url}" "$${APP_DIR}"
+cd "$${APP_DIR}"
+
+# ---- Resolve this instance's public IP from the metadata service (IMDSv2) ----
+TOKEN="$(curl -s -X PUT 'http://169.254.169.254/latest/api/token' \
+  -H 'X-aws-ec2-metadata-token-ttl-seconds: 300' || true)"
+PUBLIC_IP="$(curl -s -H "X-aws-ec2-metadata-token: $${TOKEN}" \
+  http://169.254.169.254/latest/meta-data/public-ipv4 || true)"
+if [ -z "$${PUBLIC_IP}" ]; then
+  # Fallback for IMDSv1 if v2 is unavailable.
+  PUBLIC_IP="$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 || echo localhost)"
+fi
+
+# ---- Write .env.prod for the production compose stack ----
+cat > .env.prod <<ENVEOF
+PUBLIC_API_URL=http://$${PUBLIC_IP}:4000
+JWT_SECRET=${jwt_secret}
+IMMICH_ENABLED=${enable_immich}
+IMMICH_API_KEY=
+IMMICH_VERSION=v1.124.2
+DB_USER=bocc
+DB_PASSWORD=bocc
+DB_NAME=bocc
+IMMICH_DB_USERNAME=immich
+IMMICH_DB_PASSWORD=immich
+IMMICH_DB_DATABASE_NAME=immich
+ENVEOF
+
+# ---- Build and start everything ----
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+echo "BOCC stack started. web -> http://$${PUBLIC_IP}:3000  api -> http://$${PUBLIC_IP}:4000/api"

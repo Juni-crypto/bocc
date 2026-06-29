@@ -204,6 +204,32 @@ hosts and the admin can see how much each event holds.
 
 ---
 
+## Deploy with Terraform (single VM, containerized DB + storage)
+
+Bring the WHOLE system up on one cloud VM, with the database and storage running
+IN CONTAINERS (no managed Postgres, no object store). `docker-compose.prod.yml`
+runs the app Postgres (pgvector, `bocc-db-data` volume), the API (applies Prisma
+migrations on boot), the web app, and the full Immich engine with its own
+Postgres and media storage (`bocc-immich-upload` volume).
+
+```bash
+cd infra/terraform
+cp terraform.tfvars.example terraform.tfvars   # optional
+terraform init && terraform plan && terraform apply
+```
+
+Terraform launches an Ubuntu 22.04 EC2 instance whose cloud-init installs Docker,
+clones this repo, writes `.env.prod` (with the instance's own public IP), and runs
+`docker compose -f docker-compose.prod.yml up -d --build`. The first boot builds
+the images, so allow about 3 to 5 minutes before `web_url` (`:3000`) and `api_url`
+(`:4000/api`) respond. Immich ships disabled for a clean first boot; enable it
+afterward by minting an API key and flipping `IMMICH_ENABLED`. See
+[`infra/terraform/README.md`](./infra/terraform/README.md) for enabling Immich,
+cost, and teardown (`terraform destroy`).
+
+To run the prod stack locally instead, `cp .env.prod.example .env.prod`, fill it
+in, then `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build`.
+
 ## Deployment
 
 Four pieces deploy independently. The API is the hub; web and mobile point at it, and it

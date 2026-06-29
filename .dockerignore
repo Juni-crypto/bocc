@@ -1,0 +1,31 @@
+# Keep build contexts lean and reproducible.
+# node_modules are reinstalled inside each image with `npm ci`.
+**/node_modules
+node_modules
+
+# Next.js build output (rebuilt in the web image).
+**/.next
+.next
+
+# Compiled API output (rebuilt in the api image).
+**/dist
+dist
+
+# Git metadata.
+.git
+.gitignore
+
+# The cloned Immich engine source and the dev Immich stack data are not
+# part of any image build context.
+immich/
+immich-stack/postgres
+immich-stack/library
+
+# Local env files never enter an image.
+**/.env
+**/.env.local
+.env.prod
+
+# OS / editor noise.
+**/.DS_Store
+*.log

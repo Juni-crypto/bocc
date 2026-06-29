@@ -1,0 +1,27 @@
+# Copy to terraform.tfvars and adjust. All values are optional; the defaults
+# bring up a working single-VM stack.
+
+# AWS region.
+region = "us-east-1"
+
+# Instance size. t3.large is the floor for Immich machine-learning.
+instance_type = "t3.large"
+
+# Existing EC2 key pair name for SSH access. Leave unset to launch without a key.
+# key_name = "my-keypair"
+
+# Restrict SSH to your IP. The default 0.0.0.0/0 opens it to the whole internet.
+# ssh_cidr = "203.0.113.10/32"
+
+# Root disk size in GB (media + databases + ML model cache).
+volume_size = 60
+
+# Repo to clone and run.
+repo_url = "https://github.com/Juni-crypto/bocc.git"
+branch   = "main"
+
+# JWT signing secret. Leave unset to auto-generate a strong random one.
+# jwt_secret = "set-a-long-random-string"
+
+# Start with Immich AI off (clean first boot). Flip to true after minting a key.
+enable_immich = false
