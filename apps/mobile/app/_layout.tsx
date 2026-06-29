@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -65,7 +65,12 @@ export default function RootLayout() {
  */
 function OnboardingLayer() {
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
   const [showTour, setShowTour] = useState(false);
+
+  // Only show the floating help on the home screen so it never overlaps the
+  // event tab bar or other screen controls.
+  const onHome = pathname === '/' || pathname === '/index';
 
   // First-run check. hasOnboarded() resolves false the first time around.
   useEffect(() => {
@@ -80,19 +85,21 @@ function OnboardingLayer() {
 
   return (
     <>
-      <Pressable
-        onPress={() => setShowTour(true)}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="Replay the guided tour"
-        style={({ pressed }) => [
-          styles.help,
-          { bottom: insets.bottom + 16 },
-          pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
-        ]}
-      >
-        <Ionicons name="help" size={20} color={colors.text} />
-      </Pressable>
+      {onHome && (
+        <Pressable
+          onPress={() => setShowTour(true)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Replay the guided tour"
+          style={({ pressed }) => [
+            styles.help,
+            { bottom: insets.bottom + 16 },
+            pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
+          ]}
+        >
+          <Ionicons name="help" size={20} color={colors.text} />
+        </Pressable>
+      )}
 
       <Onboarding visible={showTour} onClose={() => setShowTour(false)} />
     </>

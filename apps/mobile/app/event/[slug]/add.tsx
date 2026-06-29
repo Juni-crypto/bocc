@@ -28,7 +28,8 @@ import {
 import { FramePicker } from '@/components/FramePicker';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type LocalFile } from '@/lib/api';
-import { getMemberId } from '@/lib/store';
+import { getMemberId, setMemberId, addJoinedEvent } from '@/lib/store';
+import { useAuth } from '@/lib/auth';
 
 const CAP = 15;
 type Mode = 'camera' | 'library';
@@ -44,7 +45,10 @@ export default function AddScreen() {
     memberId?: string;
   }>();
   const eventSlug = slug ?? '';
-  const memberId = memberIdParam || getMemberId(eventSlug);
+  const { user } = useAuth();
+  const [memberId, setLocalMemberId] = useState<string | undefined>(
+    memberIdParam || getMemberId(eventSlug),
+  );
 
   const [mode, setMode] = useState<Mode>('camera');
   const [eventName, setEventName] = useState<string>(eventSlug);
@@ -153,14 +157,28 @@ export default function AddScreen() {
 
   const submit = async () => {
     if (!count) return;
-    if (!memberId) {
-      setError('Join the event before adding photos.');
-      return;
-    }
     setBusy(true);
     setError(null);
     setProgress(0);
     try {
+      // Resolve membership on demand. A host (or anyone viewing the event) can
+      // add photos without a separate join step: if we have no member yet, join
+      // silently with the account name (or Guest), then upload.
+      let mid = memberId;
+      if (!mid) {
+        const joined = await api.join(eventSlug, {
+          name: user?.name || 'Guest',
+          consentFaceMatch: true,
+        });
+        mid = joined.member.id;
+        setLocalMemberId(mid);
+        setMemberId(eventSlug, mid);
+        addJoinedEvent({
+          slug: eventSlug,
+          name: joined.event?.name ?? eventName,
+          memberId: mid,
+        });
+      }
       const files: LocalFile[] = [];
       for (let i = 0; i < shots.length; i++) {
         const framed = await bakeOne(shots[i]);
@@ -168,11 +186,11 @@ export default function AddScreen() {
         setProgress((i + 1) / shots.length);
       }
       setBakeUri(null);
-      await api.uploadPhotos(eventSlug, files, { memberId });
+      await api.uploadPhotos(eventSlug, files, { memberId: mid });
       setDone(true);
       router.push({
         pathname: '/event/[slug]',
-        params: { slug: eventSlug, memberId },
+        params: { slug: eventSlug, memberId: mid },
       });
     } catch (e) {
       setError(
