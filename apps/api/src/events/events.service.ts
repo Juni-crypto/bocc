@@ -13,6 +13,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { JoinEventDto } from './dto/join-event.dto';
 import { UploadPhotoDto } from './dto/upload-photo.dto';
+import { JwtPayload } from '../auth/jwt.guard';
 
 @Injectable()
 export class EventsService {
@@ -73,6 +74,102 @@ export class EventsService {
     return this.withJoinUrl(event);
   }
 
+  /** Host closes the event: status -> ENDED, which blocks further uploads. */
+  async end(id: string, userId: string) {
+    await this.ownedOrThrow(id, userId);
+    const event = await this.prisma.event.update({
+      where: { id },
+      data: { status: 'ENDED' },
+    });
+    return this.withJoinUrl(event);
+  }
+
+  /** Delete one photo (event host, or any admin). Removes the Immich asset too. */
+  async deletePhoto(eventId: string, photoId: string, user: JwtPayload) {
+    if (user.role === 'ADMIN') {
+      await this.getOrThrow(eventId);
+    } else {
+      await this.ownedOrThrow(eventId, user.sub);
+    }
+    const photo = await this.prisma.photo.findFirst({
+      where: { id: photoId, eventId },
+    });
+    if (!photo) throw new NotFoundException('Photo not found.');
+    await this.immich.deleteAsset(photo.immichAssetId).catch(() => undefined);
+    await this.prisma.photo.delete({ where: { id: photo.id } });
+    return { deleted: true, id: photo.id };
+  }
+
+  /**
+   * Faces detected across the event album. Each person carries a thumbnail
+   * (proxied) and how many of the event's photos they appear in. Populates as
+   * Immich finishes its background face-detection pass.
+   */
+  async listPeople(idOrSlug: string) {
+    const event = await this.resolve(idOrSlug);
+    if (!this.immich.isEnabled || !event.immichAlbumId) return { people: [] };
+    const all = await this.immich.listPeople();
+    const people: Array<{
+      id: string;
+      name: string | null;
+      photoCount: number;
+      thumbUrl: string;
+    }> = [];
+    for (const person of all) {
+      const ids = await this.immich.getPersonAssetIds(person.id, event.immichAlbumId);
+      if (ids.length) {
+        people.push({
+          id: person.id,
+          name: person.name,
+          photoCount: ids.length,
+          thumbUrl: `${this.publicBase}/api/events/${event.id}/people/${person.id}/thumb`,
+        });
+      }
+    }
+    people.sort((a, b) => b.photoCount - a.photoCount);
+    return { people };
+  }
+
+  /** Fetch a face cluster's thumbnail bytes for the people proxy. */
+  async personMedia(eventId: string, personId: string) {
+    await this.getOrThrow(eventId);
+    const media = await this.immich.fetchPersonThumbnail(personId);
+    if (!media) throw new NotFoundException('Person thumbnail unavailable.');
+    return media;
+  }
+
+  /**
+   * Everything a returning guest can see by phone: each event they joined plus
+   * the photos they uploaded there. No account needed; the phone is the key.
+   */
+  async myStuff(phone: string) {
+    const p = (phone ?? '').trim();
+    if (!p) return { phone: '', events: [] };
+    const members = await this.prisma.member.findMany({
+      where: { phone: p },
+      include: { event: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    const events: Array<{
+      event: ReturnType<EventsService['withJoinUrl']>;
+      memberName: string;
+      photos: ReturnType<EventsService['publicPhoto']>[];
+    }> = [];
+    for (const m of members) {
+      const photos = await this.prisma.photo.findMany({
+        where: { eventId: m.eventId, memberId: m.id, status: 'APPROVED' },
+        orderBy: { createdAt: 'desc' },
+        include: { member: { select: { name: true } } },
+      });
+      events.push({
+        event: this.withJoinUrl(m.event),
+        memberName: m.name,
+        photos: photos.map((ph) => this.publicPhoto(ph)),
+      });
+    }
+    return { phone: p, events };
+  }
+
   async getPublic(idOrSlug: string) {
     const event = await this.resolve(idOrSlug);
     // public, non-sensitive counts so the guest gallery header is accurate
@@ -119,6 +216,7 @@ export class EventsService {
       data: {
         eventId: event.id,
         name: dto.name?.trim() || 'Guest',
+        phone: dto.phone?.trim() || null,
         role: MemberRole.GUEST,
         consentFaceMatch: !!dto.consentFaceMatch,
         consentAt: dto.consentFaceMatch ? new Date() : null,
@@ -189,6 +287,7 @@ export class EventsService {
       where: { eventId: event.id, status: 'APPROVED' },
       orderBy: { createdAt: 'desc' },
       take: Math.min(take, 200),
+      include: { member: { select: { name: true } } },
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
     });
     return {
@@ -216,6 +315,7 @@ export class EventsService {
     const order = new Map(ranked.map((id, i) => [id, i]));
     const photos = await this.prisma.photo.findMany({
       where: { eventId: event.id, status: 'APPROVED', immichAssetId: { in: ranked } },
+      include: { member: { select: { name: true } } },
     });
     photos.sort(
       (a, b) =>
@@ -285,6 +385,7 @@ export class EventsService {
     const photos = await this.prisma.photo.findMany({
       where: { eventId: event.id, status: 'APPROVED', immichAssetId: { in: [...assetIds] } },
       orderBy: { createdAt: 'desc' },
+      include: { member: { select: { name: true } } },
     });
     return {
       status: 'ok',
@@ -297,6 +398,9 @@ export class EventsService {
   // ---- helpers ---------------------------------------------------------------
 
   private assertUploadWindowOpen(event: Event) {
+    if (event.status === 'ENDED') {
+      throw new ForbiddenException('This event has ended; uploads are closed.');
+    }
     if (event.uploadWindow === 'ALWAYS') return;
     if (event.uploadWindow === 'DURING_EVENT') {
       if (event.status !== 'LIVE') {
@@ -390,7 +494,9 @@ export class EventsService {
     return (process.env.API_PUBLIC_URL ?? 'http://localhost:4000').replace(/\/$/, '');
   }
 
-  private publicPhoto(p: Prisma.PhotoGetPayload<{}>) {
+  private publicPhoto(
+    p: Prisma.PhotoGetPayload<{}> & { member?: { name: string } | null },
+  ) {
     return {
       id: p.id,
       assetId: p.immichAssetId,
@@ -398,6 +504,7 @@ export class EventsService {
       takenAt: p.takenAt,
       lat: p.lat,
       lng: p.lng,
+      uploaderName: p.member?.name ?? null,
       // absolute so the web/mobile clients load them directly from us; we proxy Immich.
       thumbUrl: `${this.publicBase}/api/events/${p.eventId}/photos/${p.id}/thumb`,
       originalUrl: `${this.publicBase}/api/events/${p.eventId}/photos/${p.id}/original`,

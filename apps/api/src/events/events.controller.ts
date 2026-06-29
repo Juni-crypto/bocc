@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -40,6 +41,12 @@ export class EventsController {
     return this.events.listMine(user.sub);
   }
 
+  // Guest self-service: every event a phone joined + their pics. No auth.
+  @Get('guest/lookup')
+  guestLookup(@Query('phone') phone: string) {
+    return this.events.myStuff(phone ?? '');
+  }
+
   @Get(':idOrSlug')
   get(@Param('idOrSlug') idOrSlug: string) {
     return this.events.getPublic(idOrSlug);
@@ -55,6 +62,23 @@ export class EventsController {
   @Post(':id/go-live')
   goLive(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.events.goLive(id, user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/end')
+  end(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.events.end(id, user.sub);
+  }
+
+  // Host (owner) or any admin may remove a single photo.
+  @UseGuards(JwtAuthGuard)
+  @Delete(':eventId/photos/:photoId')
+  deletePhoto(
+    @Param('eventId') eventId: string,
+    @Param('photoId') photoId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.events.deletePhoto(eventId, photoId, user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -130,6 +154,25 @@ export class EventsController {
   @Get(':idOrSlug/search')
   search(@Param('idOrSlug') idOrSlug: string, @Query('q') q: string) {
     return this.events.search(idOrSlug, q ?? '');
+  }
+
+  // Detected faces across the event (auto-populates as Immich processes uploads).
+  @Get(':idOrSlug/people')
+  people(@Param('idOrSlug') idOrSlug: string) {
+    return this.events.listPeople(idOrSlug);
+  }
+
+  @Get(':eventId/people/:personId/thumb')
+  async personThumb(
+    @Param('eventId') eventId: string,
+    @Param('personId') personId: string,
+    @Res() res: Response,
+  ) {
+    const m = await this.events.personMedia(eventId, personId);
+    res
+      .set('Content-Type', m.contentType)
+      .set('Cache-Control', 'public, max-age=86400');
+    res.send(m.buffer);
   }
 
   @Post(':idOrSlug/find-me')

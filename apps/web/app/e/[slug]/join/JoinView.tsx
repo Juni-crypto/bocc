@@ -18,6 +18,7 @@ export function JoinView({ slug }: { slug: string }) {
   const next = search.get("next") || `/e/${slug}`;
 
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export function JoinView({ slug }: { slug: string }) {
     try {
       const result = await api.join(slug, {
         name: name.trim() || undefined,
+        phone: phone.trim() || undefined,
         consentFaceMatch: consent,
       });
       setMember(slug, {
@@ -40,6 +42,14 @@ export function JoinView({ slug }: { slug: string }) {
         name: result.member.name,
         consentFaceMatch: result.member.consentFaceMatch,
       });
+      // remember the phone locally so /my can pre-fill it next time
+      if (phone.trim()) {
+        try {
+          window.localStorage.setItem("bocc_phone", phone.trim());
+        } catch {
+          /* ignore storage errors */
+        }
+      }
       router.replace(next);
     } catch (e) {
       setError(
@@ -76,6 +86,26 @@ export function JoinView({ slug }: { slug: string }) {
             placeholder="e.g. Riya"
             onChange={(e) => setName(e.target.value)}
           />
+          <label
+            htmlFor="join-phone"
+            className="mb-1.5 block text-sm text-white/55"
+          >
+            Phone <span className="text-white/35">(optional)</span>
+          </label>
+          <input
+            id="join-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            className={`${inputCls} mb-1.5`}
+            value={phone}
+            placeholder="e.g. +91 98765 43210"
+            onChange={(e) => setPhone(e.target.value)}
+          />
+          <p className="mb-5 text-xs text-white/40">
+            Add it to pull up every event you joined and your photos later, from
+            any device. No account needed.
+          </p>
           <div className="divide-y divide-white/5">
             <ToggleRow
               title="Let my selfie find my photos"

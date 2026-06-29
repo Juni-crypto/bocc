@@ -11,9 +11,11 @@ import type {
   AuthUser,
   BoccEvent,
   CreateEventDto,
+  EventPerson,
   EventStats,
   FindMeResult,
   GalleryPage,
+  GuestLookup,
   JoinResult,
   MineEvent,
   ModerationQueue,
@@ -134,6 +136,31 @@ export const api = {
       headers: authHeader(token),
     }),
 
+  endEvent: (id: string, token?: string) =>
+    request<BoccEvent>(`/events/${encodeURIComponent(id)}/end`, {
+      method: "POST",
+      headers: authHeader(token),
+    }),
+
+  // host (owner) or admin removes one photo
+  deletePhoto: (eventId: string, photoId: string, token?: string) =>
+    request<{ deleted: boolean; id: string }>(
+      `/events/${encodeURIComponent(eventId)}/photos/${encodeURIComponent(photoId)}`,
+      { method: "DELETE", headers: authHeader(token) },
+    ),
+
+  // detected faces across the event (public)
+  people: (idOrSlug: string) =>
+    request<{ people: EventPerson[] }>(
+      `/events/${encodeURIComponent(idOrSlug)}/people`,
+    ),
+
+  // returning-guest self service: events joined + their pics, keyed by phone
+  guestLookup: (phone: string) =>
+    request<GuestLookup>(
+      `/events/guest/lookup?phone=${encodeURIComponent(phone)}`,
+    ),
+
   stats: (id: string, token?: string) =>
     request<EventStats>(`/events/${encodeURIComponent(id)}/stats`, {
       headers: authHeader(token),
@@ -186,6 +213,22 @@ export const api = {
     users: (token?: string) =>
       request<AdminUser[]>("/admin/users", { headers: authHeader(token) }),
 
+    createUser: (
+      dto: { email: string; name: string; password: string; role?: UserRole },
+      token?: string,
+    ) =>
+      request<AdminUser>("/admin/users", {
+        method: "POST",
+        json: dto,
+        headers: authHeader(token),
+      }),
+
+    deleteUser: (id: string, token?: string) =>
+      request<{ deleted: boolean; id: string }>(
+        `/admin/users/${encodeURIComponent(id)}`,
+        { method: "DELETE", headers: authHeader(token) },
+      ),
+
     setRole: (id: string, role: UserRole, token?: string) =>
       request<AdminUser>(`/admin/users/${encodeURIComponent(id)}/role`, {
         method: "PATCH",
@@ -197,7 +240,7 @@ export const api = {
   // ---- guests ----
   join: (
     idOrSlug: string,
-    body: { name?: string; consentFaceMatch?: boolean },
+    body: { name?: string; phone?: string; consentFaceMatch?: boolean },
   ) =>
     request<JoinResult>(`/events/${encodeURIComponent(idOrSlug)}/join`, {
       method: "POST",

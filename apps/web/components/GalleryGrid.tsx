@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import {
   MasonryGrid,
   photosToItems,
@@ -24,6 +25,9 @@ export function GalleryGrid({
 }) {
   // null = still loading; [] = loaded but empty
   const [items, setItems] = useState<MasonryItem[] | null>(null);
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [canDelete, setCanDelete] = useState(false);
+  const { user, isAdmin, token } = useAuth();
 
   useEffect(() => {
     let alive = true;
@@ -41,12 +45,39 @@ export function GalleryGrid({
     };
   }, [slug]);
 
+  // resolve the event id once, and whether this viewer may delete (admin, or
+  // the host who owns this event).
+  useEffect(() => {
+    let alive = true;
+    api
+      .getEvent(slug)
+      .then((ev) => {
+        if (!alive) return;
+        setEventId(ev.id);
+        setCanDelete(isAdmin || (!!user && ev.hostUserId === user.id));
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [slug, isAdmin, user]);
+
+  const handleDelete = async (item: MasonryItem) => {
+    if (!eventId) return;
+    await api.deletePhoto(eventId, item.id, token ?? undefined);
+    setItems((prev) => prev?.filter((x) => x.id !== item.id) ?? prev);
+  };
+
   if (items === null) return <GallerySkeleton />;
 
   if (items.length) {
     return (
       <Reveal>
-        <MasonryGrid items={items} />
+        <MasonryGrid
+          items={items}
+          canDelete={canDelete}
+          onDelete={canDelete ? handleDelete : undefined}
+        />
       </Reveal>
     );
   }

@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { UpdateEventDto } from '../events/dto/update-event.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 
 /** Platform-wide read/write for the super admin. No ownership scoping. */
 @Injectable()
@@ -127,6 +133,43 @@ export class AdminService {
       data: { role },
       select: { id: true, email: true, name: true, role: true },
     });
+  }
+
+  /** Create a host (or another admin). Email must be unique. */
+  async createUser(dto: CreateUserDto) {
+    const email = dto.email.trim().toLowerCase();
+    const exists = await this.prisma.user.findUnique({ where: { email } });
+    if (exists) {
+      throw new BadRequestException('A user with that email already exists.');
+    }
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        email,
+        name: dto.name.trim(),
+        passwordHash,
+        role: dto.role === 'ADMIN' ? Role.ADMIN : Role.USER,
+      },
+      select: { id: true, email: true, name: true, role: true, createdAt: true },
+    });
+    return { ...user, events: 0 };
+  }
+
+  /** Delete a user. Blocks self-deletion and users that still own events. */
+  async deleteUser(id: string, actorId: string) {
+    if (id === actorId) {
+      throw new BadRequestException('You cannot delete your own admin account.');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found.');
+    const owned = await this.prisma.event.count({ where: { hostUserId: id } });
+    if (owned > 0) {
+      throw new BadRequestException(
+        `This host still owns ${owned} event(s). Delete or reassign them first.`,
+      );
+    }
+    await this.prisma.user.delete({ where: { id } });
+    return { deleted: true, id };
   }
 
   private async requireEvent(id: string) {

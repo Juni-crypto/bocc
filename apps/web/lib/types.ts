@@ -70,6 +70,21 @@ export interface BoccEvent extends CreateEventDto {
   immichAlbumId?: string | null;
   joinUrl: string;
   createdAt?: string;
+  hostUserId?: string;
+  photoCount?: number;
+  crew?: number;
+}
+
+/** One returning-guest record: an event they joined + their pics there. */
+export interface GuestEventPhotos {
+  event: BoccEvent;
+  memberName: string;
+  photos: Photo[];
+}
+
+export interface GuestLookup {
+  phone: string;
+  events: GuestEventPhotos[];
 }
 
 export interface EventStats {
@@ -159,6 +174,12 @@ export interface JoinResult {
   event: BoccEvent;
 }
 
+export interface PersonRef {
+  id: string;
+  name?: string | null;
+  thumbUrl?: string;
+}
+
 export interface Photo {
   id: string;
   assetId: string;
@@ -168,6 +189,17 @@ export interface Photo {
   lng?: number | null;
   thumbUrl: string;
   originalUrl?: string;
+  /** Display name of the guest who uploaded this shot (when known). */
+  uploaderName?: string | null;
+  /** Faces detected in this photo (populated as Immich finishes processing). */
+  people?: PersonRef[];
+}
+
+export interface EventPerson {
+  id: string;
+  name?: string | null;
+  thumbUrl: string;
+  photoCount: number;
 }
 
 export interface GalleryPage {

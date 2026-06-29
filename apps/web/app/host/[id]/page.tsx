@@ -44,6 +44,7 @@ export default async function HostPage({
   return (
     <AuthGate redirectTo={`/host/${event.slug}`}>
       <HostDashboard
+        event={event}
         eventId={event.id}
         slug={event.slug}
         title={event.name}

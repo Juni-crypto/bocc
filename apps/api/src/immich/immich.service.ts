@@ -168,6 +168,31 @@ export class ImmichService {
     return res?.assets?.items?.map((a) => a.id) ?? [];
   }
 
+  /** Every face cluster Immich has detected (instance-wide, non-hidden). */
+  async listPeople(): Promise<Array<{ id: string; name: string | null }>> {
+    if (!this.enabled) return [];
+    const res = await this.req<{ people: Array<{ id: string; name?: string }> }>(
+      '/api/people?withHidden=false&size=500',
+    );
+    return (res?.people ?? []).map((p) => ({
+      id: p.id,
+      name: p.name?.trim() || null,
+    }));
+  }
+
+  /** A face cluster's thumbnail bytes, for our /people/:id/thumb proxy. */
+  async fetchPersonThumbnail(
+    personId: string,
+  ): Promise<{ buffer: Buffer; contentType: string } | null> {
+    if (!this.enabled) return null;
+    const res = await fetch(`${this.baseUrl}/api/people/${personId}/thumbnail`, {
+      headers: { 'x-api-key': this.apiKey },
+    });
+    if (!res.ok) return null;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    return { buffer, contentType: res.headers.get('content-type') ?? 'image/jpeg' };
+  }
+
   /** Asset ids belonging to a person, optionally scoped to one album. */
   async getPersonAssetIds(personId: string, albumId?: string): Promise<string[]> {
     if (!this.enabled) return [];

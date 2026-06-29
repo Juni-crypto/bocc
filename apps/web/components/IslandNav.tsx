@@ -29,8 +29,8 @@ export function IslandNav() {
         ]
       : [
           { href: "/", label: "Home", match: (p) => p === "/" },
+          { href: "/my", label: "My photos", match: (p) => p.startsWith("/my") },
           { href: "/#how", label: "How it works", match: () => false },
-          { href: "/#features", label: "Features", match: () => false },
         ];
 
   const onLogout = () => {

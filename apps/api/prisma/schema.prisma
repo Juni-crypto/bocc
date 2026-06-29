@@ -140,6 +140,8 @@ model Member {
   eventId   String
   event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
   name      String
+  // optional phone so a guest can pull up every event they joined + their pics
+  phone     String?
   role      MemberRole @default(GUEST)
 
   // consent (biometric / face matching) - GDPR / BIPA
@@ -153,6 +155,7 @@ model Member {
   photos    Photo[]
 
   @@index([eventId])
+  @@index([phone])
 }
 
 model Photo {
