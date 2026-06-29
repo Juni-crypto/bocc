@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Event, MemberRole, Photo, PhotoStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -25,6 +26,14 @@ export class EventsService {
   // ---- creation & management -------------------------------------------------
 
   async create(dto: CreateEventDto, hostUserId: string) {
+    // Guard against a stale token (e.g. user deleted) so a missing host returns
+    // a clean "sign in again" instead of a 500 foreign-key violation.
+    const host = await this.prisma.user.findUnique({ where: { id: hostUserId } });
+    if (!host) {
+      throw new UnauthorizedException(
+        'Your session is no longer valid. Please sign in again.',
+      );
+    }
     const slug = slugify(dto.name);
     const albumId = await this.immich.createAlbum(dto.name);
 
