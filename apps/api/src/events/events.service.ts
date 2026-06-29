@@ -197,6 +197,33 @@ export class EventsService {
     };
   }
 
+  /** Semantic (CLIP) search within the event, via Immich, mapped to our photos. */
+  async search(idOrSlug: string, q: string) {
+    const event = await this.resolve(idOrSlug);
+    const query = (q ?? '').trim();
+    if (!query) return { query: '', photos: [], count: 0 };
+    if (!this.immich.isEnabled || !event.semanticSearch) {
+      return {
+        query,
+        photos: [],
+        count: 0,
+        note: this.immich.isEnabled
+          ? 'Search is turned off for this event.'
+          : 'Search needs the AI engine enabled.',
+      };
+    }
+    const ranked = await this.immich.smartSearch(query, event.immichAlbumId ?? undefined);
+    const order = new Map(ranked.map((id, i) => [id, i]));
+    const photos = await this.prisma.photo.findMany({
+      where: { eventId: event.id, status: 'APPROVED', immichAssetId: { in: ranked } },
+    });
+    photos.sort(
+      (a, b) =>
+        (order.get(a.immichAssetId) ?? 1e9) - (order.get(b.immichAssetId) ?? 1e9),
+    );
+    return { query, count: photos.length, photos: photos.map((p) => this.publicPhoto(p)) };
+  }
+
   async moderationQueue(id: string, userId: string) {
     await this.ownedOrThrow(id, userId);
     const photos = await this.prisma.photo.findMany({

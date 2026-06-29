@@ -127,6 +127,11 @@ export class EventsController {
     return this.events.gallery(idOrSlug, take ? +take : 60, cursor);
   }
 
+  @Get(':idOrSlug/search')
+  search(@Param('idOrSlug') idOrSlug: string, @Query('q') q: string) {
+    return this.events.search(idOrSlug, q ?? '');
+  }
+
   @Post(':idOrSlug/find-me')
   @UseInterceptors(FileInterceptor('selfie'))
   findMe(

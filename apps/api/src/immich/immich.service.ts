@@ -151,6 +151,23 @@ export class ImmichService {
     return { buffer, contentType: res.headers.get('content-type') ?? 'image/jpeg' };
   }
 
+  /** CLIP semantic search ("people near the cake"), optionally scoped to an album. */
+  async smartSearch(query: string, albumId?: string): Promise<string[]> {
+    if (!this.enabled) return [];
+    const res = await this.req<{ assets: { items: Array<{ id: string }> } }>(
+      '/api/search/smart',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          query,
+          ...(albumId ? { albumIds: [albumId] } : {}),
+          size: 100,
+        }),
+      },
+    );
+    return res?.assets?.items?.map((a) => a.id) ?? [];
+  }
+
   /** Asset ids belonging to a person, optionally scoped to one album. */
   async getPersonAssetIds(personId: string, albumId?: string): Promise<string[]> {
     if (!this.enabled) return [];

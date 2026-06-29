@@ -366,6 +366,11 @@ export const api = {
     );
   },
 
+  search: (idOrSlug: string, q: string) =>
+    request<{ query: string; count?: number; photos: Photo[]; note?: string }>(
+      `/events/${encodeURIComponent(idOrSlug)}/search?q=${encodeURIComponent(q)}`,
+    ),
+
   uploadPhotos: (idOrSlug: string, files: LocalFile[], meta: UploadMeta) => {
     const form = new FormData();
     files.forEach((f, i) => {

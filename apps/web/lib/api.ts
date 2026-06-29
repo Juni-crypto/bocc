@@ -17,6 +17,7 @@ import type {
   JoinResult,
   MineEvent,
   ModerationQueue,
+  Photo,
   UserRole,
 } from "./types";
 
@@ -212,6 +213,11 @@ export const api = {
       `/events/${encodeURIComponent(idOrSlug)}/gallery${suffix}`,
     );
   },
+
+  search: (idOrSlug: string, q: string) =>
+    request<{ query: string; count?: number; photos: Photo[]; note?: string }>(
+      `/events/${encodeURIComponent(idOrSlug)}/search?q=${encodeURIComponent(q)}`,
+    ),
 
   uploadPhotos: (
     idOrSlug: string,

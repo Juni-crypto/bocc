@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -7,18 +8,44 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Display, Label } from '@/components/ui';
+import { PhotoGrid } from '@/components/PhotoGrid';
+import { api, type Photo } from '@/lib/api';
 import { colors, fonts, radius } from '@/theme/tokens';
 
 const SUGGESTIONS = ['the cake', 'dance floor', 'first dance', 'kids', 'sunset'];
 
 /**
- * Semantic search tab (CLIP-style). The backend search endpoint is not wired
- * yet, so this shows a clean placeholder rather than faking results.
+ * Semantic search tab. Real CLIP search via the backend (-> Immich), scoped to
+ * the event. Renders matched photos; no fabricated results.
  */
 export default function SearchScreen() {
+  const { slug } = useLocalSearchParams<{ slug: string }>();
   const [q, setQ] = useState('');
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const run = async (term: string) => {
+    const query = term.trim();
+    if (!query || !slug) return;
+    setLoading(true);
+    setSearched(true);
+    setNote(null);
+    try {
+      const res = await api.search(slug, query);
+      setPhotos(res.photos ?? []);
+      setNote(res.note ?? null);
+    } catch {
+      setPhotos([]);
+      setNote('Search is unavailable right now.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Screen edges={['top']}>
@@ -34,6 +61,7 @@ export default function SearchScreen() {
           placeholderTextColor={colors.textFaint}
           style={styles.input}
           returnKeyType="search"
+          onSubmitEditing={() => run(q)}
           accessibilityLabel="Search the gallery"
         />
         <ScrollView
@@ -46,7 +74,10 @@ export default function SearchScreen() {
             <Pressable
               key={s}
               style={styles.chip}
-              onPress={() => setQ(s)}
+              onPress={() => {
+                setQ(s);
+                run(s);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Search for ${s}`}
               hitSlop={8}
@@ -61,11 +92,22 @@ export default function SearchScreen() {
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.empty}>
-          {q.trim()
-            ? 'Semantic search is coming soon. Results will appear here once the backend search endpoint is live.'
-            : 'Search the pooled gallery by what is in the photo. OCR and CLIP run on the backend.'}
-        </Text>
+        {loading ? (
+          <ActivityIndicator color={colors.lime} style={{ marginTop: 40 }} />
+        ) : !searched ? (
+          <Text style={styles.empty}>
+            Search the pooled gallery by what is in the photo. OCR and CLIP run on
+            the backend.
+          </Text>
+        ) : note ? (
+          <Text style={styles.empty}>{note}</Text>
+        ) : photos.length ? (
+          <PhotoGrid photos={photos} />
+        ) : (
+          <Text style={styles.empty}>
+            Nothing matched "{q.trim()}". Try different words.
+          </Text>
+        )}
       </ScrollView>
     </Screen>
   );

@@ -22,8 +22,8 @@ import { setMemberId } from '@/lib/store';
 import { joinDeepLink } from '@/lib/links';
 
 /**
- * Step 1 - Scan & join + biometric consent.
- * The viewfinder is the QR-scan placeholder (swap for expo-camera later).
+ * Guest join + biometric consent. Reached from a scanned QR or a share link.
+ * Shows the event's real join QR and the consent gate before joining.
  */
 export default function JoinScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
