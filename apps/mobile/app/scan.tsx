@@ -139,7 +139,7 @@ export default function ScanScreen() {
             />
           </View>
           <PillButton
-            label="Join"
+            label="Continue"
             trailing={<Text style={{ color: colors.ink }}>{'↗'}</Text>}
             onPress={onManual}
             disabled={!code.trim()}

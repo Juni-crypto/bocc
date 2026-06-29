@@ -18,7 +18,13 @@ import { PillButton } from '@/components/PillButton';
 import { Display, Label } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type BoccEvent } from '@/lib/api';
-import { setMemberId, setGuestPhone, loadGuestPhone } from '@/lib/store';
+import {
+  setMemberId,
+  getMemberId,
+  addJoinedEvent,
+  setGuestPhone,
+  loadGuestPhone,
+} from '@/lib/store';
 import { joinWebUrl } from '@/lib/links';
 
 /**
@@ -28,6 +34,14 @@ import { joinWebUrl } from '@/lib/links';
 export default function JoinScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const eventSlug = slug ?? '';
+
+  // Already on the crew for this event? Skip straight to the gallery so we
+  // never make a returning guest "join" twice.
+  useEffect(() => {
+    if (eventSlug && getMemberId(eventSlug)) {
+      router.replace({ pathname: '/event/[slug]', params: { slug: eventSlug } });
+    }
+  }, [eventSlug]);
 
   const [event, setEvent] = useState<BoccEvent | null>(null);
   const [name, setName] = useState('');
@@ -70,9 +84,16 @@ export default function JoinScreen() {
         consentFaceMatch: consent,
       });
       setMemberId(eventSlug, res.member.id);
+      addJoinedEvent({
+        slug: eventSlug,
+        name: event?.name ?? res.event?.name,
+        memberId: res.member.id,
+      });
       if (trimmedPhone) setGuestPhone(trimmedPhone);
-      router.push({
-        pathname: '/event/[slug]/selfie',
+      // Land in the live gallery (the home of the event). Finding yourself with
+      // a selfie lives in the People tab, it is not forced on join.
+      router.replace({
+        pathname: '/event/[slug]',
         params: { slug: eventSlug, memberId: res.member.id },
       });
     } catch (e) {

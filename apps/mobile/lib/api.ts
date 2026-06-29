@@ -215,6 +215,48 @@ export interface EventStats {
   photos: number;
   pending: number;
   faces: number;
+  storageBytes?: number;
+}
+
+export interface MineEvent extends BoccEvent {
+  stats?: EventStats;
+}
+
+// ---- admin (super admin only) ----
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt?: string;
+  events: number;
+}
+
+export interface AdminEvent {
+  id: string;
+  name: string;
+  slug: string;
+  status: EventStatus;
+  visibility?: Visibility;
+  createdAt?: string;
+  host?: { id: string; email: string; name: string } | null;
+  photos: number;
+  crew: number;
+  storageBytes: number;
+}
+
+export interface AdminOverview {
+  totals: {
+    users: number;
+    events: number;
+    photos: number;
+    pendingPhotos: number;
+    members: number;
+    faces: number;
+    storageBytes: number;
+  };
+  eventsByStatus: Record<string, number>;
+  recentEvents: AdminEvent[];
 }
 
 export interface ModerationResult {
@@ -343,6 +385,10 @@ export const api = {
   getEvent: (idOrSlug: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(idOrSlug)}`),
 
+  // events owned by the signed-in host (with inline stats)
+  mine: (token?: string) =>
+    request<MineEvent[]>('/events/mine', { headers: authHeader(token) }),
+
   updateEvent: (id: string, input: UpdateEventInput, token?: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -464,5 +510,46 @@ export const api = {
       `/events/${encodeURIComponent(idOrSlug)}/find-me`,
       { method: 'POST', body: form },
     );
+  },
+
+  // ---- super admin (Bearer + role ADMIN) ----
+  admin: {
+    overview: (token?: string) =>
+      request<AdminOverview>('/admin/overview', { headers: authHeader(token) }),
+
+    events: (token?: string) =>
+      request<AdminEvent[]>('/admin/events', { headers: authHeader(token) }),
+
+    deleteEvent: (id: string, token?: string) =>
+      request<{ deleted: boolean }>(`/admin/events/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: authHeader(token),
+      }),
+
+    users: (token?: string) =>
+      request<AdminUser[]>('/admin/users', { headers: authHeader(token) }),
+
+    createUser: (
+      dto: { email: string; name: string; password: string; role?: UserRole },
+      token?: string,
+    ) =>
+      request<AdminUser>('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(dto),
+        headers: authHeader(token),
+      }),
+
+    deleteUser: (id: string, token?: string) =>
+      request<{ deleted: boolean; id: string }>(
+        `/admin/users/${encodeURIComponent(id)}`,
+        { method: 'DELETE', headers: authHeader(token) },
+      ),
+
+    setRole: (id: string, role: UserRole, token?: string) =>
+      request<AdminUser>(`/admin/users/${encodeURIComponent(id)}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+        headers: authHeader(token),
+      }),
   },
 };

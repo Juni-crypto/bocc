@@ -1,20 +1,16 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '@/theme/tokens';
 
-const ICONS: Record<string, string> = {
-  gallery: '▦', // ▦
-  search: '\u{1F50D}',
-  add: '＋', // ＋
-  me: '\u{1F642}',
-};
+type IconName = keyof typeof Ionicons.glyphMap;
 
-/** Bottom tab bar for the pooled gallery flow, matching the mockup. */
+/** Bottom tab bar for the pooled gallery flow: real icons + a raised lime camera. */
 export default function EventTabsLayout() {
   const insets = useSafeAreaInsets();
-  // Lift the bar above the home indicator and give it a real 44pt+ tap row.
-  const bottomPad = Math.max(insets.bottom, 8);
+  // Lift the bar above the home indicator and keep a real 44pt+ tap row.
+  const bottomPad = Math.max(insets.bottom, 10);
 
   return (
     <Tabs
@@ -22,7 +18,7 @@ export default function EventTabsLayout() {
         headerShown: false,
         tabBarStyle: [
           styles.bar,
-          { height: 60 + bottomPad, paddingBottom: bottomPad },
+          { height: 64 + bottomPad, paddingBottom: bottomPad },
         ],
         tabBarActiveTintColor: colors.lime,
         tabBarInactiveTintColor: colors.textFaint,
@@ -35,7 +31,7 @@ export default function EventTabsLayout() {
         name="index"
         options={{
           title: 'Gallery',
-          tabBarIcon: tabIcon('gallery'),
+          tabBarIcon: tabIcon('images-outline', 'images'),
           tabBarAccessibilityLabel: 'Gallery',
         }}
       />
@@ -43,23 +39,23 @@ export default function EventTabsLayout() {
         name="search"
         options={{
           title: 'Search',
-          tabBarIcon: tabIcon('search'),
+          tabBarIcon: tabIcon('search-outline', 'search'),
           tabBarAccessibilityLabel: 'Search',
         }}
       />
       <Tabs.Screen
         name="add"
         options={{
-          title: 'Add',
-          tabBarIcon: tabIcon('add'),
+          title: '',
+          tabBarIcon: cameraIcon,
           tabBarAccessibilityLabel: 'Add photos',
         }}
       />
       <Tabs.Screen
         name="me"
         options={{
-          title: 'Me',
-          tabBarIcon: tabIcon('me'),
+          title: 'People',
+          tabBarIcon: tabIcon('people-outline', 'people'),
           tabBarAccessibilityLabel: 'My photos',
         }}
       />
@@ -70,12 +66,22 @@ export default function EventTabsLayout() {
   );
 }
 
-function tabIcon(key: string) {
-  return ({ color }: { color: string }) => (
+/** Standard tab: outline when idle, filled when active. */
+function tabIcon(idle: IconName, active: IconName) {
+  return ({ color, focused }: { color: string; focused: boolean }) => (
     <View style={styles.icon} accessible={false}>
-      <Text style={{ color, fontSize: 16 }} accessibilityElementsHidden>
-        {ICONS[key]}
-      </Text>
+      <Ionicons name={focused ? active : idle} size={24} color={color} />
+    </View>
+  );
+}
+
+/** Center action: a raised filled lime circle that pops above the bar. */
+function cameraIcon({ focused }: { focused: boolean }) {
+  return (
+    <View style={styles.cameraWrap} accessible={false}>
+      <View style={[styles.cameraDisc, focused && styles.cameraDiscActive]}>
+        <Ionicons name="camera" size={26} color={colors.ink} />
+      </View>
     </View>
   );
 }
@@ -84,10 +90,49 @@ const styles = StyleSheet.create({
   bar: {
     backgroundColor: colors.surface,
     borderTopColor: colors.hairlineStrong,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 8,
+    elevation: 0,
   },
   item: { paddingVertical: 4 },
-  barLabel: { fontFamily: fonts.body, fontSize: 11 },
-  icon: { minWidth: 44, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
+  barLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11,
+    letterSpacing: 0.2,
+    marginTop: 2,
+  },
+  icon: {
+    minWidth: 44,
+    minHeight: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraWrap: {
+    minWidth: 56,
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Raise the disc so it pops above the bar's top hairline.
+    marginTop: -22,
+  },
+  cameraDisc: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.lime,
+    borderWidth: 4,
+    borderColor: colors.ink,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.lime,
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  cameraDiscActive: { transform: [{ scale: 1.04 }] },
 });

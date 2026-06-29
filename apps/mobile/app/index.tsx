@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth';
  * in the mockup (host create/manage and the guest journey).
  */
 export default function Home() {
-  const { user, ready, logout } = useAuth();
+  const { user, ready, isAdmin, logout } = useAuth();
   const authed = ready && !!user;
 
   return (
@@ -44,14 +44,26 @@ export default function Home() {
             onPress={() => router.push('/scan')}
           />
           <PillButton
-            label="Host an event"
+            label="My events"
+            variant="ghost"
+            onPress={() => router.push('/my-events' as never)}
+          />
+          <PillButton
+            label={authed ? 'Create event' : 'Host an event'}
             variant="ghost"
             onPress={() =>
               router.push(
-                (authed ? '/host/create' : '/login?next=/host/create') as never,
+                (authed ? '/host/create' : '/login?next=/host') as never,
               )
             }
           />
+          {isAdmin ? (
+            <PillButton
+              label="Super admin"
+              variant="ghost"
+              onPress={() => router.push('/admin' as never)}
+            />
+          ) : null}
         </View>
 
         <Pressable

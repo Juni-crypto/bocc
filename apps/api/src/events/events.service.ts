@@ -176,20 +176,44 @@ export class EventsService {
       include: { event: true },
       orderBy: { createdAt: 'desc' },
     });
+    // Collapse to one entry per event (a phone may have joined the same event
+    // more than once) and union that phone's photos across those member rows.
+    const grouped = new Map<
+      string,
+      {
+        event: (typeof members)[number]['event'];
+        memberIds: string[];
+        memberName: string;
+      }
+    >();
+    for (const m of members) {
+      const cur = grouped.get(m.eventId);
+      if (cur) cur.memberIds.push(m.id);
+      else
+        grouped.set(m.eventId, {
+          event: m.event,
+          memberIds: [m.id],
+          memberName: m.name,
+        });
+    }
     const events: Array<{
       event: ReturnType<EventsService['withJoinUrl']>;
       memberName: string;
       photos: ReturnType<EventsService['publicPhoto']>[];
     }> = [];
-    for (const m of members) {
+    for (const { event, memberIds, memberName } of grouped.values()) {
       const photos = await this.prisma.photo.findMany({
-        where: { eventId: m.eventId, memberId: m.id, status: 'APPROVED' },
+        where: {
+          eventId: event.id,
+          memberId: { in: memberIds },
+          status: 'APPROVED',
+        },
         orderBy: { createdAt: 'desc' },
         include: { member: { select: { name: true } } },
       });
       events.push({
-        event: this.withJoinUrl(m.event),
-        memberName: m.name,
+        event: this.withJoinUrl(event),
+        memberName,
         photos: photos.map((ph) => this.publicPhoto(ph)),
       });
     }
@@ -228,6 +252,19 @@ export class EventsService {
 
   async join(idOrSlug: string, dto: JoinEventDto) {
     const event = await this.resolve(idOrSlug);
+
+    // Idempotent by phone: a returning guest with the same phone re-uses their
+    // existing membership instead of creating a duplicate member each time.
+    const phone = dto.phone?.trim();
+    if (phone) {
+      const existing = await this.prisma.member.findFirst({
+        where: { eventId: event.id, phone },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (existing) {
+        return { member: existing, event: this.withJoinUrl(event) };
+      }
+    }
 
     if (event.requireName && !dto.name?.trim()) {
       throw new BadRequestException('This event requires a name to join.');
