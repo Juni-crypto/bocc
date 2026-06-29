@@ -1,0 +1,23 @@
+# Deploy the BOCC web app (apps/web, Next.js) to Netlify.
+#
+# Easiest: in Netlify, "Add new site" -> "Import from GitHub" -> pick this repo.
+# These settings are picked up automatically. The Next.js runtime plugin is
+# auto-installed by Netlify when declared below.
+#
+# The web client reads NEXT_PUBLIC_API_URL at build time and talks to the
+# HTTPS backend (Caddy + Let's Encrypt on the EC2). Change it here if the API
+# host changes, then redeploy.
+
+[build]
+  # repo root so npm workspaces resolve; build just the web workspace
+  command = "npm ci && npm run build -w @bocc/web"
+  publish = "apps/web/.next"
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://65-2-145-227.sslip.io/api"
+  NODE_VERSION = "20"
+  # the web app is the apps/web package within the monorepo
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

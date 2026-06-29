@@ -1,0 +1,35 @@
+name: Uptime and TLS monitor
+
+# Intelligent monitoring for the live backend: checks API health, that Immich is
+# wired, and that the Let's Encrypt cert is not about to expire. A failed run
+# notifies the repo owner (GitHub sends failure emails by default). Caddy renews
+# the cert automatically; this is the watchdog on top.
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      HOST: 65-2-145-227.sslip.io
+    steps:
+      - name: API health (HTTPS)
+        run: |
+          set -e
+          out=$(curl -fsS -m 15 "https://$HOST/api/health")
+          echo "health: $out"
+          echo "$out" | grep -q '"status":"ok"' || { echo "::error::API health is not ok"; exit 1; }
+          echo "$out" | grep -q '"db":"up"'      || { echo "::error::database is down"; exit 1; }
+          echo "$out" | grep -q '"immich":"enabled"' || echo "::warning::Immich is not enabled"
+
+      - name: TLS certificate expiry
+        run: |
+          set -e
+          end=$(echo | openssl s_client -connect "$HOST:443" -servername "$HOST" 2>/dev/null \
+                | openssl x509 -noout -enddate | cut -d= -f2)
+          end_s=$(date -d "$end" +%s); now_s=$(date +%s)
+          days=$(( (end_s - now_s) / 86400 ))
+          echo "TLS cert for $HOST expires in $days days ($end)"
+          if [ "$days" -lt 20 ]; then echo "::error::cert expires in $days days (renewal may be stuck)"; exit 1; fi
