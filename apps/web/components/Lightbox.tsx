@@ -6,6 +6,7 @@
 // top of whatever items the grid already loaded.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { MasonryItem } from "@/components/MasonryGrid";
 import { resolveThumb } from "@/components/MasonryGrid";
 
@@ -71,7 +72,7 @@ export function Lightbox({
     return () => clearInterval(t);
   }, [playing, next, items.length]);
 
-  if (!item) return null;
+  if (!item || typeof document === "undefined") return null;
 
   const full = item.src ?? resolveThumb(item.originalUrl ?? item.thumbUrl);
   const date = fmtDate(item.takenAt);
@@ -89,7 +90,7 @@ export function Lightbox({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex flex-col bg-black/92 backdrop-blur-sm"
       role="dialog"
@@ -252,6 +253,7 @@ export function Lightbox({
           </span>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
