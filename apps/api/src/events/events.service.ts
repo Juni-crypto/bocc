@@ -375,10 +375,14 @@ export class EventsService {
     return event;
   }
 
+  private get webBase() {
+    return (process.env.WEB_PUBLIC_URL ?? 'https://bocc.app').replace(/\/$/, '');
+  }
+
   private withJoinUrl(event: Event) {
     return {
       ...event,
-      joinUrl: `https://bocc.app/e/${event.slug}`,
+      joinUrl: `${this.webBase}/e/${event.slug}`,
     };
   }
 

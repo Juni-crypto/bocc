@@ -19,7 +19,7 @@ import { Display, Label } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type BoccEvent } from '@/lib/api';
 import { setMemberId } from '@/lib/store';
-import { joinDeepLink } from '@/lib/links';
+import { joinWebUrl } from '@/lib/links';
 
 /**
  * Guest join + biometric consent. Reached from a scanned QR or a share link.
@@ -85,7 +85,7 @@ export default function JoinScreen() {
             <View style={styles.scanTag}>
               <RecDot label="JOINING" />
             </View>
-            <QrCode value={joinDeepLink(eventSlug)} size={140} />
+            <QrCode value={joinWebUrl(eventSlug)} size={140} />
           </Viewfinder>
 
           <View style={styles.copy}>

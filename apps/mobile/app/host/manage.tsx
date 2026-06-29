@@ -11,7 +11,7 @@ import { Display, Label, StatCard } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { api, type EventStats, type Photo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { joinDeepLink, joinShareUrl } from '@/lib/links';
+import { joinShareUrl, joinWebUrl } from '@/lib/links';
 
 const EMPTY_STATS: EventStats = { crew: 0, photos: 0, pending: 0, faces: 0 };
 
@@ -120,7 +120,7 @@ export default function ManageEvent() {
         {showQr && (
           <Bezel style={{ marginTop: 16 }}>
             <View style={styles.qrWrap}>
-              <QrCode value={joinDeepLink(eventSlug)} size={170} />
+              <QrCode value={joinWebUrl(eventSlug)} size={170} />
               <Text style={styles.qrUrl}>{joinShareUrl(eventSlug)}</Text>
               <Label style={{ marginTop: 4 }}>Scan to join the crew</Label>
             </View>
