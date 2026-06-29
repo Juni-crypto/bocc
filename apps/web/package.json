@@ -11,10 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "15.3.3",
+    "motion": "12.16.0",
+    "next": "^16.2.9",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "motion": "12.16.0"
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.8",
