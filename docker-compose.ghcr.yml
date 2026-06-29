@@ -50,6 +50,7 @@ services:
       IMMICH_URL: http://immich-server:2283
       IMMICH_API_KEY: ${IMMICH_API_KEY:-}
       API_PUBLIC_URL: ${PUBLIC_API_URL}
+      WEB_PUBLIC_URL: ${WEB_PUBLIC_URL:-https://bocc.app}
       JWT_SECRET: ${JWT_SECRET}
       PORT: "4000"
     ports:
