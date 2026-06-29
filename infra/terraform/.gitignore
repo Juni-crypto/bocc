@@ -12,3 +12,8 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# SSH deploy keys (never commit)
+bocc-deploy
+bocc-deploy.pub
+bocc-deploy-new*
