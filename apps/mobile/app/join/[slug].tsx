@@ -18,7 +18,7 @@ import { PillButton } from '@/components/PillButton';
 import { Display, Label } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type BoccEvent } from '@/lib/api';
-import { setMemberId } from '@/lib/store';
+import { setMemberId, setGuestPhone, loadGuestPhone } from '@/lib/store';
 import { joinWebUrl } from '@/lib/links';
 
 /**
@@ -31,6 +31,7 @@ export default function JoinScreen() {
 
   const [event, setEvent] = useState<BoccEvent | null>(null);
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [consent, setConsent] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,15 +48,29 @@ export default function JoinScreen() {
     };
   }, [eventSlug]);
 
+  // Pre-fill the phone they joined with before, if we have one.
+  useEffect(() => {
+    let alive = true;
+    loadGuestPhone().then((p) => {
+      if (alive && p) setPhone(p);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const onJoin = async () => {
     setBusy(true);
     setError(null);
     try {
+      const trimmedPhone = phone.trim();
       const res = await api.join(eventSlug, {
         name: name.trim() || 'Guest',
+        phone: trimmedPhone || undefined,
         consentFaceMatch: consent,
       });
       setMemberId(eventSlug, res.member.id);
+      if (trimmedPhone) setGuestPhone(trimmedPhone);
       router.push({
         pathname: '/event/[slug]/selfie',
         params: { slug: eventSlug, memberId: res.member.id },
@@ -103,9 +118,26 @@ export default function JoinScreen() {
               onChangeText={setName}
               style={styles.input}
               autoCapitalize="words"
-              returnKeyType="done"
+              returnKeyType="next"
               accessibilityLabel="Your name"
             />
+
+            <TextInput
+              placeholder="Phone (optional)"
+              placeholderTextColor={colors.textFaint}
+              value={phone}
+              onChangeText={setPhone}
+              style={styles.input}
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="telephoneNumber"
+              returnKeyType="done"
+              accessibilityLabel="Your phone number"
+            />
+            <Text style={styles.phoneHint}>
+              Add your phone to find your pics later from any device.
+            </Text>
 
             <Pressable
               style={styles.consent}
@@ -166,6 +198,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.body,
     fontSize: 15,
+  },
+  phoneHint: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textFaint,
+    marginTop: 8,
   },
   consent: { flexDirection: 'row', gap: 10, marginTop: 16, alignItems: 'flex-start' },
   check: {

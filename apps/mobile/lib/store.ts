@@ -6,9 +6,43 @@
  * Swap the get/set bodies for SecureStore if persistence is added later.
  */
 
+import * as SecureStore from 'expo-secure-store';
 import type { FindMeResult } from './api';
 
 const memberIds = new Map<string, string>();
+
+/**
+ * Returning-guest phone. Persisted in SecureStore under `bocc_phone` (the same
+ * key apps/web uses in localStorage) so the My-photos screen can pre-fill the
+ * number a guest joined with, even on a fresh app launch. A module-memory
+ * mirror keeps reads synchronous after the first set.
+ */
+const PHONE_STORAGE_KEY = 'bocc_phone';
+let phoneCache: string | null = null;
+
+export function setGuestPhone(phone: string): void {
+  const value = phone.trim();
+  if (!value) return;
+  phoneCache = value;
+  SecureStore.setItemAsync(PHONE_STORAGE_KEY, value).catch(() => {
+    /* secure store unavailable */
+  });
+}
+
+export function getGuestPhoneSync(): string | null {
+  return phoneCache;
+}
+
+export async function loadGuestPhone(): Promise<string | null> {
+  if (phoneCache) return phoneCache;
+  try {
+    const stored = await SecureStore.getItemAsync(PHONE_STORAGE_KEY);
+    if (stored) phoneCache = stored;
+  } catch {
+    /* secure store unavailable */
+  }
+  return phoneCache;
+}
 
 export function setMemberId(eventSlug: string, memberId: string): void {
   if (!eventSlug || !memberId) return;

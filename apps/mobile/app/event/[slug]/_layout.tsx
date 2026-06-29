@@ -63,8 +63,9 @@ export default function EventTabsLayout() {
           tabBarAccessibilityLabel: 'My photos',
         }}
       />
-      {/* flow screen that lives under the event but is hidden from the tab bar */}
+      {/* flow screens that live under the event but are hidden from the tab bar */}
       <Tabs.Screen name="selfie" options={{ href: null }} />
+      <Tabs.Screen name="person/[personId]" options={{ href: null }} />
     </Tabs>
   );
 }

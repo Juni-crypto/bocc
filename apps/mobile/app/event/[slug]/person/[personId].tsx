@@ -1,61 +1,47 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { RecDot } from '@/components/RecDot';
 import { PhotoGrid } from '@/components/PhotoGrid';
-import { PeopleStrip } from '@/components/PeopleStrip';
 import { Display, Label } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { api, type BoccEvent, type Photo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { getMemberId } from '@/lib/store';
 
-/** Step 4 - Pooled gallery, rendering real thumbUrl images from the live API. */
-export default function GalleryScreen() {
-  const { slug, memberId: memberIdParam } = useLocalSearchParams<{
+/** Photos of a single detected person, rendered through the tappable grid. */
+export default function PersonPhotosScreen() {
+  const { slug, personId } = useLocalSearchParams<{
     slug: string;
-    memberId?: string;
+    personId: string;
   }>();
   const eventSlug = slug ?? '';
-  const memberId = memberIdParam || getMemberId(eventSlug) || '';
   const { token, user, isAdmin } = useAuth();
 
-  const [event, setEvent] = useState<BoccEvent | null>(null);
-  const [eventName, setEventName] = useState('Live gallery');
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [count, setCount] = useState(0);
+  const [event, setEvent] = useState<BoccEvent | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!eventSlug) return;
+    if (!eventSlug || !personId) return;
     let alive = true;
 
     api
       .getEvent(eventSlug)
-      .then((e) => {
-        if (!alive) return;
-        setEvent(e);
-        setEventName(e.name);
-      })
+      .then((e) => alive && setEvent(e))
       .catch(() => {});
     api
-      .gallery(eventSlug, { take: 60 })
+      .personPhotos(eventSlug, personId)
       .then((res) => {
         if (!alive) return;
         setPhotos(res.photos);
         setLoaded(true);
       })
       .catch(() => alive && setLoaded(true));
-    api
-      .stats(eventSlug)
-      .then((s) => alive && setCount(s.photos))
-      .catch(() => {});
 
     return () => {
       alive = false;
     };
-  }, [eventSlug]);
+  }, [eventSlug, personId]);
 
   const canDelete =
     isAdmin || (!!event?.hostUserId && event.hostUserId === user?.id);
@@ -69,18 +55,20 @@ export default function GalleryScreen() {
   return (
     <Screen edges={['top']}>
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View>
-            <Label>Live - {count} photos</Label>
-            <Display size={20} style={{ marginTop: 2 }}>
-              {eventName}
-            </Display>
-          </View>
-          <RecDot label="REC" />
-        </View>
-
-        <View style={styles.people}>
-          <PeopleStrip slug={eventSlug} memberId={memberId} />
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+        >
+          <Text style={styles.backGlyph}>{'‹'}</Text>
+        </Pressable>
+        <View style={styles.headerText}>
+          <Label>{photos.length} photos</Label>
+          <Display size={20} style={{ marginTop: 2 }}>
+            Photos of this person
+          </Display>
         </View>
       </View>
 
@@ -93,8 +81,8 @@ export default function GalleryScreen() {
         ) : (
           <Text style={styles.empty}>
             {loaded
-              ? 'No photos yet. Be the first to add a shot.'
-              : 'Loading the gallery...'}
+              ? 'No photos of this person yet.'
+              : 'Loading photos...'}
           </Text>
         )}
       </ScrollView>
@@ -104,18 +92,28 @@ export default function GalleryScreen() {
 
 const styles = StyleSheet.create({
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.hairlineSoft,
     backgroundColor: colors.ink,
   },
-  headerRow: {
-    flexDirection: 'row',
+  back: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    backgroundColor: colors.fill,
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
   },
-  people: { marginTop: 14 },
+  backGlyph: { fontFamily: fonts.display, fontSize: 24, color: colors.text, marginTop: -2 },
+  pressed: { opacity: 0.7 },
+  headerText: { flex: 1 },
   grid: { padding: 12, paddingBottom: 96 },
   empty: {
     fontFamily: fonts.body,

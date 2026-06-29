@@ -102,6 +102,7 @@ export type UpdateEventInput = Partial<CreateEventInput> & {
 
 export interface JoinInput {
   name?: string;
+  phone?: string;
   consentFaceMatch?: boolean;
 }
 
@@ -147,6 +148,33 @@ export interface BoccEvent {
   moderationQueue: boolean;
 
   joinUrl?: string;
+  hostUserId?: string;
+  photoCount?: number;
+  crew?: number;
+}
+
+export interface PersonRef {
+  id: string;
+  name?: string | null;
+  thumbUrl?: string;
+}
+
+export interface EventPerson {
+  id: string;
+  name?: string | null;
+  thumbUrl: string;
+  photoCount: number;
+}
+
+export interface GuestEventPhotos {
+  event: BoccEvent;
+  memberName: string;
+  photos: Photo[];
+}
+
+export interface GuestLookup {
+  phone: string;
+  events: GuestEventPhotos[];
 }
 
 export interface Member {
@@ -173,6 +201,8 @@ export interface Photo {
   /** Absolute URL served by our backend (proxies Immich). Load directly. */
   thumbUrl: string;
   originalUrl?: string;
+  uploaderName?: string | null;
+  people?: PersonRef[];
 }
 
 export interface GalleryResult {
@@ -325,6 +355,35 @@ export const api = {
       method: 'POST',
       headers: authHeader(token),
     }),
+
+  endEvent: (id: string, token?: string) =>
+    request<BoccEvent>(`/events/${encodeURIComponent(id)}/end`, {
+      method: 'POST',
+      headers: authHeader(token),
+    }),
+
+  deletePhoto: (eventId: string, photoId: string, token?: string) =>
+    request<{ deleted: boolean; id: string }>(
+      `/events/${encodeURIComponent(eventId)}/photos/${encodeURIComponent(photoId)}`,
+      { method: 'DELETE', headers: authHeader(token) },
+    ),
+
+  people: (idOrSlug: string) =>
+    request<{ people: EventPerson[] }>(
+      `/events/${encodeURIComponent(idOrSlug)}/people`,
+    ),
+
+  personPhotos: (idOrSlug: string, personId: string) =>
+    request<{ personId: string; count: number; photos: Photo[] }>(
+      `/events/${encodeURIComponent(idOrSlug)}/people/${encodeURIComponent(
+        personId,
+      )}/photos`,
+    ),
+
+  guestLookup: (phone: string) =>
+    request<GuestLookup>(
+      `/events/guest/lookup?phone=${encodeURIComponent(phone)}`,
+    ),
 
   stats: (id: string, token?: string) =>
     request<EventStats>(`/events/${encodeURIComponent(id)}/stats`, {

@@ -54,6 +54,19 @@ export default function Home() {
           />
         </View>
 
+        <Pressable
+          onPress={() => router.push('/my')}
+          hitSlop={8}
+          style={styles.myPhotos}
+          accessibilityRole="button"
+          accessibilityLabel="Find my photos"
+        >
+          <Text style={styles.myPhotosText}>
+            Already joined?{' '}
+            <Text style={styles.myPhotosLink}>Find my photos</Text>
+          </Text>
+        </Pressable>
+
         {authed ? (
           <View style={styles.account}>
             <Text style={styles.accountText}>
@@ -123,6 +136,9 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   actions: { marginTop: 32, gap: 12 },
+  myPhotos: { marginTop: 16, alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  myPhotosText: { fontFamily: fonts.body, fontSize: 13, color: colors.textMuted },
+  myPhotosLink: { fontFamily: fonts.bodySemibold, color: colors.lime },
   account: {
     marginTop: 20,
     flexDirection: 'row',
