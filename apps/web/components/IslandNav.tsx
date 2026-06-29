@@ -25,11 +25,13 @@ export function IslandNav() {
       ? [
           { href: "/", label: "Home", match: (p) => p === "/" },
           { href: "/dashboard", label: "Dashboard", match: (p) => p.startsWith("/dashboard") },
+          { href: "/my-events", label: "My events", match: (p) => p.startsWith("/my-events") },
           { href: "/create", label: "Create", match: (p) => p.startsWith("/create") },
         ]
       : [
           { href: "/", label: "Home", match: (p) => p === "/" },
-          { href: "/my", label: "My photos", match: (p) => p.startsWith("/my") },
+          { href: "/my-events", label: "My events", match: (p) => p.startsWith("/my-events") },
+          { href: "/my", label: "My photos", match: (p) => p === "/my" || p.startsWith("/my/") },
           { href: "/#how", label: "How it works", match: () => false },
         ];
 

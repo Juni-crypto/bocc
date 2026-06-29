@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bezel } from "@/components/Bezel";
 import { PillButton } from "@/components/PillButton";
@@ -8,6 +8,7 @@ import { Reveal } from "@/components/Reveal";
 import { ToggleRow } from "@/components/Toggle";
 import { api, ApiError } from "@/lib/api";
 import { getMember, setMember } from "@/lib/member";
+import { addJoinedEvent } from "@/lib/joined";
 
 const inputCls =
   "w-full min-h-[44px] rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 outline-none transition focus:border-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-ink";
@@ -23,10 +24,30 @@ export function JoinView({ slug }: { slug: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Remember the event name (if we can fetch it) so the joined-events card can
+  // show a real title instead of the slug.
+  const eventName = useRef<string | null>(null);
+
   // Already a member? Skip straight ahead.
   useEffect(() => {
     if (getMember(slug)) router.replace(next);
   }, [slug, next, router]);
+
+  // Best-effort fetch of the event name for the joined-events list.
+  useEffect(() => {
+    let active = true;
+    api
+      .getEvent(slug)
+      .then((ev) => {
+        if (active) eventName.current = ev.name;
+      })
+      .catch(() => {
+        /* keep the slug fallback */
+      });
+    return () => {
+      active = false;
+    };
+  }, [slug]);
 
   const onJoin = async () => {
     setSubmitting(true);
@@ -42,6 +63,8 @@ export function JoinView({ slug }: { slug: string }) {
         name: result.member.name,
         consentFaceMatch: result.member.consentFaceMatch,
       });
+      // remember this event locally so /my-events can list it without a lookup
+      addJoinedEvent({ slug, name: eventName.current ?? slug });
       // remember the phone locally so /my can pre-fill it next time
       if (phone.trim()) {
         try {

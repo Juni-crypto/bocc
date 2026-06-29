@@ -5,11 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { RecDot } from "@/components/RecDot";
 import { useAuth } from "@/lib/auth";
+import { ADMIN_TOUR_SEEN_KEY, autoRunOnce, startAdminTour } from "@/lib/tour";
 
 const NAV = [
-  { href: "/admin", label: "Overview", match: (p: string) => p === "/admin" },
-  { href: "/admin/events", label: "Events", match: (p: string) => p.startsWith("/admin/events") },
-  { href: "/admin/users", label: "Users", match: (p: string) => p.startsWith("/admin/users") },
+  { href: "/admin", label: "Overview", match: (p: string) => p === "/admin", tour: undefined as string | undefined },
+  { href: "/admin/events", label: "Events", match: (p: string) => p.startsWith("/admin/events"), tour: "admin-tour-events" },
+  { href: "/admin/users", label: "Users", match: (p: string) => p.startsWith("/admin/users"), tour: "admin-tour-users" },
 ];
 
 const focusRing =
@@ -30,6 +31,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       router.replace("/login?next=%2Fadmin");
     }
   }, [ready, user, router]);
+
+  // Auto-run the admin tour once, on the first authorized admin visit.
+  useEffect(() => {
+    if (ready && user && isAdmin) {
+      autoRunOnce(ADMIN_TOUR_SEEN_KEY, startAdminTour);
+    }
+  }, [ready, user, isAdmin]);
 
   // Hydrating, or mid-redirect for a signed-out visitor.
   if (!ready || !user) {
@@ -74,6 +82,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={startAdminTour}
+            data-tour="admin-tour-button"
+            className={`min-h-[44px] rounded-full border border-lime/40 bg-lime/10 px-4 py-2.5 text-sm font-semibold text-lime transition hover:bg-lime/20 ${focusRing}`}
+          >
+            Take a tour
+          </button>
           <Link
             href="/"
             className={`min-h-[44px] rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm text-white/80 transition hover:bg-white/[0.07] ${focusRing}`}
@@ -101,6 +117,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={item.tour}
                 aria-current={active ? "page" : undefined}
                 className={`min-h-[44px] rounded-xl px-4 py-2.5 text-sm transition ${focusRing} ${
                   active

@@ -108,6 +108,9 @@ export function AdminUsersView() {
     }
   };
 
+  // First user that is not the signed-in admin, used to anchor the tour's delete step.
+  const firstDeletableIndex = users ? users.findIndex((u) => me?.id !== u.id) : -1;
+
   return (
     <div className="space-y-8">
       <div>
@@ -121,7 +124,7 @@ export function AdminUsersView() {
       <section>
         <h2 className="mb-3 text-sm font-semibold text-white/80">Create host</h2>
         <Bezel coreClassName="p-5">
-          <form onSubmit={createUser} className="space-y-4" noValidate>
+          <form onSubmit={createUser} className="space-y-4" noValidate data-tour="admin-create-host">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="new-name" className="mb-1.5 block text-[11px] uppercase tracking-[0.14em] text-white/45">
@@ -234,7 +237,7 @@ export function AdminUsersView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {users.map((u) => {
+                {users.map((u, i) => {
                   const isMe = me?.id === u.id;
                   const isAdmin = u.role === "ADMIN";
                   const rowBusy = busy === u.id;
@@ -264,6 +267,7 @@ export function AdminUsersView() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
+                            data-tour={i === 0 ? "admin-role-toggle" : undefined}
                             disabled={rowBusy}
                             onClick={() => setRole(u.id, isAdmin ? "USER" : "ADMIN")}
                             className={`min-h-[44px] rounded-full border px-4 py-2 text-xs font-medium transition disabled:opacity-60 ${focusRing} ${
@@ -277,6 +281,7 @@ export function AdminUsersView() {
                           {!isMe && (
                             <button
                               type="button"
+                              data-tour={i === firstDeletableIndex ? "admin-user-delete" : undefined}
                               disabled={rowBusy}
                               onClick={() => deleteUser(u)}
                               className={`min-h-[44px] rounded-full border border-coral/40 bg-coral/10 px-4 py-2 text-xs font-medium text-coral transition hover:bg-coral/20 disabled:opacity-60 ${focusRing}`}

@@ -102,10 +102,14 @@ export function AdminEventsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {events.map((ev) => {
+              {events.map((ev, i) => {
                 const rowBusy = busy === ev.id;
                 return (
-                  <tr key={ev.id} className="align-middle">
+                  <tr
+                    key={ev.id}
+                    className="align-middle"
+                    data-tour={i === 0 ? "admin-event-row" : undefined}
+                  >
                     <td className="px-4 py-3">
                       <Link
                         href={`/e/${ev.slug}`}
@@ -174,7 +178,7 @@ export function AdminEventsView() {
                           </button>
                         </div>
                       ) : (
-                        <div className="flex justify-end">
+                        <div className="flex justify-end" data-tour={i === 0 ? "admin-event-delete" : undefined}>
                           <button
                             type="button"
                             disabled={rowBusy}

@@ -245,6 +245,93 @@ body {
   color: #d7ff3e;
 }
 
+/* ------------------------------------------------------------------ */
+/* driver.js guided tour popovers (.bocc-tour) — dark + lime brand     */
+/* ------------------------------------------------------------------ */
+.driver-popover.bocc-tour {
+  background: #0e0e10;
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.06);
+  max-width: 340px;
+  padding: 20px;
+}
+.driver-popover.bocc-tour .driver-popover-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.driver-popover.bocc-tour .driver-popover-description {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.driver-popover.bocc-tour .driver-popover-progress-text {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* color the little caret/arrow to match the surface */
+.driver-popover.bocc-tour .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: #0e0e10;
+}
+.driver-popover.bocc-tour .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: #0e0e10;
+}
+.driver-popover.bocc-tour .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: #0e0e10;
+}
+.driver-popover.bocc-tour .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: #0e0e10;
+}
+.driver-popover.bocc-tour .driver-popover-footer {
+  margin-top: 14px;
+  gap: 8px;
+}
+.driver-popover.bocc-tour .driver-popover-footer button {
+  text-shadow: none;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  min-height: 36px;
+  transition: background 0.2s var(--ease), filter 0.2s var(--ease);
+}
+.driver-popover.bocc-tour .driver-popover-footer button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.driver-popover.bocc-tour .driver-popover-footer .driver-popover-next-btn {
+  background: #d7ff3e;
+  border-color: #d7ff3e;
+  color: #050505;
+}
+.driver-popover.bocc-tour .driver-popover-footer .driver-popover-next-btn:hover {
+  filter: brightness(1.05);
+}
+.driver-popover.bocc-tour .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 22px;
+  transition: color 0.2s var(--ease);
+}
+.driver-popover.bocc-tour .driver-popover-close-btn:hover {
+  color: #fff;
+}
+/* lime highlight ring around the staged element */
+.driver-active .driver-overlay,
+.driver-active .driver-stage {
+  transition: all 0.3s var(--ease);
+}
+
 /* Respect reduced-motion: hold the REC dot steady, drop perpetual/large transitions */
 @media (prefers-reduced-motion: reduce) {
   .rec {

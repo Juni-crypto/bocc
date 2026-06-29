@@ -11,6 +11,7 @@ import { ToggleRow } from "@/components/Toggle";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatBytes } from "@/lib/format";
+import { autoRunOnce, HOST_TOUR_SEEN_KEY, startHostTour } from "@/lib/tour";
 import type {
   BoccEvent,
   CreateEventDto,
@@ -162,6 +163,11 @@ export function HostDashboard({
     }
   };
 
+  // Auto-run the host onboarding tour once, on the first dashboard visit.
+  useEffect(() => {
+    autoRunOnce(HOST_TOUR_SEEN_KEY, startHostTour);
+  }, []);
+
   // Live-poll stats + moderation queue when we have a real event id + token.
   useEffect(() => {
     if (!eventId || !token) return;
@@ -245,6 +251,7 @@ export function HostDashboard({
             <PillButton
               variant="ghost"
               className="px-5 py-3 text-sm"
+              data-tour="host-edit-settings"
               aria-expanded={settingsOpen}
               onClick={() => (settingsOpen ? setSettingsOpen(false) : openSettings())}
             >
@@ -256,11 +263,22 @@ export function HostDashboard({
                 type="button"
                 onClick={endEvent}
                 disabled={ending}
+                data-tour="host-end-event"
                 className="inline-flex min-h-[44px] items-center rounded-full border border-coral/40 bg-coral/10 px-5 py-3 text-sm font-semibold text-coral transition hover:bg-coral/20 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
                 {ending ? "Ending…" : "End event"}
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={startHostTour}
+              data-tour="host-help-button"
+              aria-label="How it works"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-lime/40 bg-lime/10 px-5 py-3 text-sm font-semibold text-lime transition hover:bg-lime/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+            >
+              <span aria-hidden="true">?</span> How it works
+            </button>
 
             {saved && !settingsOpen && (
               <span
@@ -466,6 +484,7 @@ export function HostDashboard({
       <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
         {/* QR / share card */}
         <Reveal>
+          <div data-tour="host-qr">
           <Bezel viewfinder coreClassName="flex flex-col items-center p-8 text-center">
             <div
               className={`mb-5 flex items-center gap-2 text-xs ${
@@ -506,11 +525,12 @@ export function HostDashboard({
               </PillButton>
             </div>
           </Bezel>
+          </div>
         </Reveal>
 
         {/* live stats + feed */}
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
+          <div data-tour="host-stats" className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
             <Reveal>
               <Bezel coreClassName="p-4 sm:p-6">
                 <div className="font-display text-3xl font-bold text-lime sm:text-4xl">
@@ -546,6 +566,7 @@ export function HostDashboard({
           </div>
 
           <Reveal>
+            <div data-tour="host-gallery">
             <Bezel coreClassName="p-6">
               <div className="mb-5 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Recent uploads</h3>
@@ -573,6 +594,7 @@ export function HostDashboard({
                 </p>
               )}
             </Bezel>
+            </div>
           </Reveal>
 
           {/* moderation */}

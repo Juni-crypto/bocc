@@ -70,16 +70,18 @@ export function AdminOverviewView() {
       </div>
 
       {/* totals: dense definition grid, not hero cards */}
-      <Bezel coreClassName="p-2">
-        <dl className="grid grid-cols-2 divide-white/10 sm:grid-cols-4 lg:grid-cols-7">
-          {totals.map((t) => (
-            <div key={t.label} className="border-b border-r border-white/5 px-4 py-5 last:border-r-0">
-              <dt className="text-[11px] uppercase tracking-[0.14em] text-white/45">{t.label}</dt>
-              <dd className="mt-1 font-display text-2xl font-semibold tracking-tight">{t.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </Bezel>
+      <div data-tour="admin-totals">
+        <Bezel coreClassName="p-2">
+          <dl className="grid grid-cols-2 divide-white/10 sm:grid-cols-4 lg:grid-cols-7">
+            {totals.map((t) => (
+              <div key={t.label} className="border-b border-r border-white/5 px-4 py-5 last:border-r-0">
+                <dt className="text-[11px] uppercase tracking-[0.14em] text-white/45">{t.label}</dt>
+                <dd className="mt-1 font-display text-2xl font-semibold tracking-tight">{t.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </Bezel>
+      </div>
 
       {/* events by status */}
       <section>
