@@ -45,13 +45,20 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "BOCC uses the camera to scan an event QR so you can join the crew."
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
             "kotlinVersion": "1.9.25"
           }
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

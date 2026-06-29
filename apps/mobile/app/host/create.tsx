@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { PillButton } from '@/components/PillButton';
 import { Slider } from '@/components/Slider';
@@ -17,6 +17,7 @@ import { Display, Label, SettingRow } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type CreateEventInput, type EventType } from '@/lib/api';
 import { EVENT_TYPES } from '@/lib/demo';
+import { useAuth } from '@/lib/auth';
 
 const CAP_STEPS = [5, 10, 15, 20, 30, 0]; // 0 = unlimited
 
@@ -36,6 +37,18 @@ const PRESETS: Record<
 
 /** Host create wizard - basics + capture rules + key toggles (steps 1-2,4). */
 export default function CreateEvent() {
+  const { token, ready } = useAuth();
+
+  // Gate: hosts must be logged in. Redirect to login (with return path) once
+  // hydration settles, so we never flash the form for an unauthed user.
+  useFocusEffect(
+    useCallback(() => {
+      if (ready && !token) {
+        router.replace('/login?next=/host/create' as never);
+      }
+    }, [ready, token]),
+  );
+
   const [name, setName] = useState('Aisha & Dev, Sangeet');
   const [type, setType] = useState<EventType>('WEDDING');
   const [cap, setCap] = useState(15);
@@ -66,8 +79,8 @@ export default function CreateEvent() {
       allowVideo,
     };
     try {
-      const created = await api.createEvent(payload);
-      const live = await api.goLive(created.id);
+      const created = await api.createEvent(payload, token ?? undefined);
+      const live = await api.goLive(created.id, token ?? undefined);
       router.push({
         pathname: '/host/manage',
         params: { id: live.id, slug: live.slug, name: live.name },

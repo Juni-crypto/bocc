@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { RecDot } from '@/components/RecDot';
@@ -6,12 +6,16 @@ import { PillButton } from '@/components/PillButton';
 import { Display, Label } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { Text } from 'react-native';
+import { useAuth } from '@/lib/auth';
 
 /**
  * Entry chooser. Guests scan/join; hosts create. Mirrors the two flow lanes
  * in the mockup (host create/manage and the guest journey).
  */
 export default function Home() {
+  const { user, ready, logout } = useAuth();
+  const authed = ready && !!user;
+
   return (
     <Screen>
       <ScrollView
@@ -37,19 +41,35 @@ export default function Home() {
           <PillButton
             label="Join an event"
             trailing={<Arrow />}
-            onPress={() =>
-              router.push({
-                pathname: '/join/[slug]',
-                params: { slug: 'aisha-dev-sangeet' },
-              })
-            }
+            onPress={() => router.push('/scan')}
           />
           <PillButton
             label="Host an event"
             variant="ghost"
-            onPress={() => router.push('/host/create')}
+            onPress={() =>
+              router.push(
+                (authed ? '/host/create' : '/login?next=/host/create') as never,
+              )
+            }
           />
         </View>
+
+        {authed ? (
+          <View style={styles.account}>
+            <Text style={styles.accountText}>
+              Hosting as{' '}
+              <Text style={styles.accountName}>{user?.name || user?.email}</Text>
+            </Text>
+            <Pressable
+              onPress={logout}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Log out"
+            >
+              <Text style={styles.logout}>Log out</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View style={styles.live}>
           <RecDot label="LIVE" />
@@ -103,5 +123,14 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
   actions: { marginTop: 32, gap: 12 },
+  account: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  accountText: { fontFamily: fonts.body, fontSize: 13, color: colors.textMuted },
+  accountName: { color: colors.text, fontFamily: fonts.bodySemibold },
+  logout: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.lime },
   live: { marginTop: 28 },
 });

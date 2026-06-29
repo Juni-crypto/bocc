@@ -12,13 +12,14 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Viewfinder } from '@/components/Viewfinder';
-import { QrPlaceholder } from '@/components/QrPlaceholder';
+import { QrCode } from '@/components/QrCode';
 import { RecDot } from '@/components/RecDot';
 import { PillButton } from '@/components/PillButton';
 import { Display, Label } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type BoccEvent } from '@/lib/api';
 import { setMemberId } from '@/lib/store';
+import { joinDeepLink } from '@/lib/links';
 
 /**
  * Step 1 - Scan & join + biometric consent.
@@ -82,9 +83,9 @@ export default function JoinScreen() {
         >
           <Viewfinder style={styles.vf}>
             <View style={styles.scanTag}>
-              <RecDot label="SCANNING" />
+              <RecDot label="JOINING" />
             </View>
-            <QrPlaceholder value={eventSlug} size={140} />
+            <QrCode value={joinDeepLink(eventSlug)} size={140} />
           </Viewfinder>
 
           <View style={styles.copy}>
@@ -135,7 +136,7 @@ export default function JoinScreen() {
               style={{ marginTop: 18 }}
             />
             <Label style={{ marginTop: 14, textAlign: 'center' }}>
-              QR scan placeholder - tap join to continue
+              You scanned this event - tap join to continue
             </Label>
           </View>
         </ScrollView>

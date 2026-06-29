@@ -123,8 +123,11 @@ export function HostDashboard({
             <p className="mb-7 text-sm text-white/55">
               Tap, scan, or share the link
             </p>
-            <div className="rounded-2xl bg-white p-4 shadow-[0_0_50px_rgba(215,255,62,0.15)]">
-              <QrCode size={180} />
+            <div className="rounded-2xl shadow-[0_0_50px_rgba(215,255,62,0.15)]">
+              <QrCode
+                value={typeof window !== "undefined" ? `${window.location.origin}/e/${slug}` : joinUrl}
+                size={180}
+              />
             </div>
             <div className="mt-6 max-w-full break-all rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-center font-mono text-sm text-white/70">
               {shareLabel}

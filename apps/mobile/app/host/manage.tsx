@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { RecDot } from '@/components/RecDot';
 import { Bezel } from '@/components/Bezel';
-import { QrPlaceholder } from '@/components/QrPlaceholder';
+import { QrCode } from '@/components/QrCode';
 import { PhotoGrid } from '@/components/PhotoGrid';
 import { PillButton } from '@/components/PillButton';
 import { Display, Label, StatCard } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { api, type EventStats, type Photo } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { joinDeepLink, joinShareUrl } from '@/lib/links';
 
 const EMPTY_STATS: EventStats = { crew: 0, photos: 0, pending: 0, faces: 0 };
 
@@ -24,21 +26,32 @@ export default function ManageEvent() {
   const eventSlug = slug ?? '';
   const eventName = name ?? 'Your event';
 
+  const { token, ready } = useAuth();
+
   const [stats, setStats] = useState<EventStats>(EMPTY_STATS);
   const [pending, setPending] = useState<Photo[]>([]);
   const [showQr, setShowQr] = useState(false);
 
+  // Gate: host dashboard requires auth.
+  useFocusEffect(
+    useCallback(() => {
+      if (ready && !token) {
+        router.replace('/login?next=/host/manage' as never);
+      }
+    }, [ready, token]),
+  );
+
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId || !token) return;
     let alive = true;
 
     const poll = () => {
       api
-        .stats(eventId)
+        .stats(eventId, token)
         .then((s) => alive && setStats(s))
         .catch(() => {});
       api
-        .moderation(eventId)
+        .moderation(eventId, token)
         .then((m) => alive && setPending(m.photos))
         .catch(() => {});
     };
@@ -49,14 +62,16 @@ export default function ManageEvent() {
       alive = false;
       clearInterval(timer);
     };
-  }, [eventId]);
+  }, [eventId, token]);
 
   const approveAll = async () => {
     const queue = pending;
     setPending([]);
     setStats((s) => ({ ...s, pending: 0 }));
     await Promise.all(
-      queue.map((p) => api.moderate(eventId, p.id, 'approve').catch(() => {})),
+      queue.map((p) =>
+        api.moderate(eventId, p.id, 'approve', token ?? undefined).catch(() => {}),
+      ),
     );
   };
 
@@ -105,8 +120,8 @@ export default function ManageEvent() {
         {showQr && (
           <Bezel style={{ marginTop: 16 }}>
             <View style={styles.qrWrap}>
-              <QrPlaceholder value={eventSlug} size={170} />
-              <Text style={styles.qrUrl}>bocc.app/e/{eventSlug}</Text>
+              <QrCode value={joinDeepLink(eventSlug)} size={170} />
+              <Text style={styles.qrUrl}>{joinShareUrl(eventSlug)}</Text>
               <Label style={{ marginTop: 4 }}>Scan to join the crew</Label>
             </View>
           </Bezel>

@@ -16,6 +16,7 @@ import {
   HankenGrotesk_600SemiBold,
 } from '@expo-google-fonts/hanken-grotesk';
 import { colors } from '@/theme/tokens';
+import { AuthProvider } from '@/lib/auth';
 
 export default function RootLayout() {
   const [loaded] = useSpaceGrotesk({
@@ -38,14 +39,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="light" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: colors.ink },
-          }}
-        />
+        <AuthProvider>
+          <StatusBar style="light" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+              contentStyle: { backgroundColor: colors.ink },
+            }}
+          />
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

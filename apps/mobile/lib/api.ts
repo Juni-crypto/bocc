@@ -30,6 +30,26 @@ export type DownloadPolicy = 'EVERYONE' | 'HOST_ONLY' | 'DISABLED';
 export type MemberRole = 'HOST' | 'GUEST';
 export type PhotoStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+// ---- auth ------------------------------------------------------------------
+
+export type UserRole = 'USER' | 'ADMIN';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  createdAt?: string;
+}
+
+export interface AuthResult {
+  token: string;
+  user: AuthUser;
+}
+
+/** localStorage / SecureStore key shared with apps/web (bocc_auth). */
+export const AUTH_STORAGE_KEY = 'bocc_auth';
+
 // ---- payloads --------------------------------------------------------------
 
 export interface CreateEventInput {
@@ -213,6 +233,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Build a Bearer Authorization header from a token (omit when absent). */
+function authHeader(token?: string | null): Record<string, string> {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
@@ -261,39 +286,67 @@ export function thumbSrc(thumbUrl?: string | null): string | undefined {
 // ---- endpoints -------------------------------------------------------------
 
 export const api = {
-  // host: create & manage
-  createEvent: (input: CreateEventInput) =>
+  // auth (token-free; they mint the token)
+  signup: (body: { email: string; password: string; name: string }) =>
+    request<AuthResult>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  login: (body: { email: string; password: string }) =>
+    request<AuthResult>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  me: (token: string) =>
+    request<AuthUser>('/auth/me', { headers: authHeader(token) }),
+
+  // host: create & manage (Bearer required; 401 without)
+  createEvent: (input: CreateEventInput, token?: string) =>
     request<BoccEvent>('/events', {
       method: 'POST',
       body: JSON.stringify(input),
+      headers: authHeader(token),
     }),
 
   getEvent: (idOrSlug: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(idOrSlug)}`),
 
-  updateEvent: (id: string, input: UpdateEventInput) =>
+  updateEvent: (id: string, input: UpdateEventInput, token?: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(input),
+      headers: authHeader(token),
     }),
 
-  goLive: (id: string) =>
+  goLive: (id: string, token?: string) =>
     request<BoccEvent>(`/events/${encodeURIComponent(id)}/go-live`, {
       method: 'POST',
+      headers: authHeader(token),
     }),
 
-  stats: (id: string) =>
-    request<EventStats>(`/events/${encodeURIComponent(id)}/stats`),
+  stats: (id: string, token?: string) =>
+    request<EventStats>(`/events/${encodeURIComponent(id)}/stats`, {
+      headers: authHeader(token),
+    }),
 
-  moderation: (id: string) =>
-    request<ModerationResult>(`/events/${encodeURIComponent(id)}/moderation`),
+  moderation: (id: string, token?: string) =>
+    request<ModerationResult>(`/events/${encodeURIComponent(id)}/moderation`, {
+      headers: authHeader(token),
+    }),
 
-  moderate: (id: string, photoId: string, decision: 'approve' | 'reject') =>
+  moderate: (
+    id: string,
+    photoId: string,
+    decision: 'approve' | 'reject',
+    token?: string,
+  ) =>
     request<Photo>(
       `/events/${encodeURIComponent(id)}/moderation/${encodeURIComponent(
         photoId,
       )}/${decision}`,
-      { method: 'POST' },
+      { method: 'POST', headers: authHeader(token) },
     ),
 
   // guest
