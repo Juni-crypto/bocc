@@ -310,17 +310,38 @@ function authHeader(token?: string | null): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      ...(init?.body && !(init.body instanceof FormData)
-        ? { 'Content-Type': 'application/json' }
-        : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
+async function request<T>(
+  path: string,
+  init?: RequestInit & { timeoutMs?: number },
+): Promise<T> {
+  const { timeoutMs = 60000, ...rest } = init ?? {};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...rest,
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        ...(rest.body && !(rest.body instanceof FormData)
+          ? { 'Content-Type': 'application/json' }
+          : {}),
+        ...(rest.headers ?? {}),
+      },
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    const aborted = (e as { name?: string })?.name === 'AbortError';
+    throw new ApiError(
+      aborted
+        ? 'This took too long. Check your connection and try again.'
+        : 'Network error. Check your connection and try again.',
+      0,
+    );
+  }
+  clearTimeout(timer);
 
   const text = await res.text();
   const data = text ? safeJson(text) : null;

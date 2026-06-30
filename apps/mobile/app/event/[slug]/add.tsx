@@ -55,7 +55,7 @@ export default function AddScreen() {
 
   // capture / library state
   const [shots, setShots] = useState<string[]>([]); // raw photo URIs queued
-  const [frame, setFrame] = useState<FrameVariant>('Classic');
+  const [frame, setFrame] = useState<FrameVariant>('None');
 
   // camera control
   const [permission, requestPermission] = useCameraPermissions();
@@ -105,7 +105,7 @@ export default function AddScreen() {
     if (!cameraRef.current || shooting || full) return;
     setShooting(true);
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.85 });
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.6 });
       if (photo?.uri) setShots((prev) => [...prev, photo.uri].slice(0, CAP));
     } catch {
       setError('Could not capture. Try again.');
@@ -125,7 +125,7 @@ export default function AddScreen() {
     const res = await ImagePicker.launchImageLibraryAsync({
       allowsMultipleSelection: true,
       selectionLimit: CAP - count,
-      quality: 0.85,
+      quality: 0.6,
     });
     if (res.canceled) return;
     setShots((prev) => [...prev, ...res.assets.map((a) => a.uri)].slice(0, CAP));
@@ -138,18 +138,33 @@ export default function AddScreen() {
   // "None" skips the offscreen capture entirely for speed.
   const bakeOne = (uri: string): Promise<string> => {
     if (frame === 'None') return Promise.resolve(uri);
-    return new Promise((resolve, reject) => {
+    // Always resolves: if the offscreen frame capture stalls or fails, fall
+    // back to the original photo so the upload can never hang on baking.
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (out: string) => {
+        if (settled) return;
+        settled = true;
+        resolve(out);
+      };
+      const fallback = setTimeout(() => finish(uri), 4000);
       setBakeUri(uri);
-      // Let the offscreen frame paint before snapshotting it.
       requestAnimationFrame(() => {
         setTimeout(() => {
           if (!frameRef.current) {
-            reject(new Error('frame not ready'));
+            clearTimeout(fallback);
+            finish(uri);
             return;
           }
           captureRef(frameRef, { format: 'jpg', quality: 0.9 })
-            .then(resolve)
-            .catch(reject);
+            .then((out) => {
+              clearTimeout(fallback);
+              finish(out);
+            })
+            .catch(() => {
+              clearTimeout(fallback);
+              finish(uri);
+            });
         }, 60);
       });
     });
@@ -337,11 +352,13 @@ export default function AddScreen() {
       {count > 0 ? <FramePicker value={frame} onChange={setFrame} /> : null}
 
       <View style={styles.footer}>
-        {busy && progress > 0 ? (
+        {busy ? (
           <View style={styles.bakeRow}>
             <ActivityIndicator color={colors.lime} />
             <Text style={styles.bakeText}>
-              Baking frames {Math.round(progress * 100)}%
+              {frame !== 'None' && progress < 1
+                ? `Preparing frames ${Math.round(progress * 100)}%`
+                : 'Uploading to the event...'}
             </Text>
           </View>
         ) : null}
