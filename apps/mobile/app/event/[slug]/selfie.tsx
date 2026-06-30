@@ -9,14 +9,14 @@ import { Display, Label } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { api, ApiError } from '@/lib/api';
 import { getMemberId, setFindMeResult } from '@/lib/store';
+import { useEventSlug } from '@/lib/nav';
 
 /** Step 2 - Take one selfie -> find my photos via the live API. */
 export default function SelfieScreen() {
-  const { slug, memberId: memberIdParam } = useLocalSearchParams<{
-    slug: string;
+  const { memberId: memberIdParam } = useLocalSearchParams<{
     memberId?: string;
   }>();
-  const eventSlug = slug ?? '';
+  const eventSlug = useEventSlug();
   const memberId = memberIdParam || getMemberId(eventSlug) || '';
 
   const [uri, setUri] = useState<string | null>(null);

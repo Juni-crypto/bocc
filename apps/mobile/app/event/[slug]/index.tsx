@@ -10,14 +10,14 @@ import { colors, fonts } from '@/theme/tokens';
 import { api, type BoccEvent, type Photo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { getMemberId } from '@/lib/store';
+import { useEventSlug } from '@/lib/nav';
 
 /** Step 4 - Pooled gallery, rendering real thumbUrl images from the live API. */
 export default function GalleryScreen() {
-  const { slug, memberId: memberIdParam } = useLocalSearchParams<{
-    slug: string;
+  const { memberId: memberIdParam } = useLocalSearchParams<{
     memberId?: string;
   }>();
-  const eventSlug = slug ?? '';
+  const eventSlug = useEventSlug();
   const memberId = memberIdParam || getMemberId(eventSlug) || '';
   const { token, user, isAdmin } = useAuth();
 

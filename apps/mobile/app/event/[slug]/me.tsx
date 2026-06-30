@@ -8,14 +8,14 @@ import { Display, Label } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { type Photo } from '@/lib/api';
 import { getFindMeResult } from '@/lib/store';
+import { useEventSlug } from '@/lib/nav';
 
 /** Step 5 - "You're in N photos" result, rendered from the live find-me call. */
 export default function MeScreen() {
-  const { slug, selfie } = useLocalSearchParams<{
-    slug?: string;
+  const { selfie } = useLocalSearchParams<{
     selfie?: string;
   }>();
-  const eventSlug = slug ?? '';
+  const eventSlug = useEventSlug();
   const result = getFindMeResult(eventSlug);
 
   let photos: Photo[] = [];

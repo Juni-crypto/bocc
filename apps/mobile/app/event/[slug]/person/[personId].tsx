@@ -7,14 +7,14 @@ import { Display, Label } from '@/components/ui';
 import { colors, fonts } from '@/theme/tokens';
 import { api, type BoccEvent, type Photo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useEventSlug } from '@/lib/nav';
 
 /** Photos of a single detected person, rendered through the tappable grid. */
 export default function PersonPhotosScreen() {
-  const { slug, personId } = useLocalSearchParams<{
-    slug: string;
+  const { personId } = useLocalSearchParams<{
     personId: string;
   }>();
-  const eventSlug = slug ?? '';
+  const eventSlug = useEventSlug();
   const { token, user, isAdmin } = useAuth();
 
   const [photos, setPhotos] = useState<Photo[]>([]);

@@ -8,12 +8,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Display, Label } from '@/components/ui';
 import { PhotoGrid } from '@/components/PhotoGrid';
 import { api, type Photo } from '@/lib/api';
 import { colors, fonts, radius } from '@/theme/tokens';
+import { useEventSlug } from '@/lib/nav';
 
 const SUGGESTIONS = ['the cake', 'dance floor', 'first dance', 'kids', 'sunset'];
 
@@ -22,7 +22,7 @@ const SUGGESTIONS = ['the cake', 'dance floor', 'first dance', 'kids', 'sunset']
  * the event. Renders matched photos; no fabricated results.
  */
 export default function SearchScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const slug = useEventSlug();
   const [q, setQ] = useState('');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);

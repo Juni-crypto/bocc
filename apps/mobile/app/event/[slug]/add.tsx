@@ -30,6 +30,7 @@ import { colors, fonts, radius } from '@/theme/tokens';
 import { api, ApiError, type LocalFile } from '@/lib/api';
 import { getMemberId, setMemberId, addJoinedEvent } from '@/lib/store';
 import { useAuth } from '@/lib/auth';
+import { useEventSlug } from '@/lib/nav';
 
 const CAP = 15;
 type Mode = 'camera' | 'library';
@@ -40,11 +41,10 @@ type Mode = 'camera' | 'library';
  * live event with the chosen frame applied.
  */
 export default function AddScreen() {
-  const { slug, memberId: memberIdParam } = useLocalSearchParams<{
-    slug: string;
+  const { memberId: memberIdParam } = useLocalSearchParams<{
     memberId?: string;
   }>();
-  const eventSlug = slug ?? '';
+  const eventSlug = useEventSlug();
   const { user } = useAuth();
   const [memberId, setLocalMemberId] = useState<string | undefined>(
     memberIdParam || getMemberId(eventSlug),
@@ -157,6 +157,10 @@ export default function AddScreen() {
 
   const submit = async () => {
     if (!count) return;
+    if (!eventSlug) {
+      setError('Open the event again to add photos.');
+      return;
+    }
     setBusy(true);
     setError(null);
     setProgress(0);
