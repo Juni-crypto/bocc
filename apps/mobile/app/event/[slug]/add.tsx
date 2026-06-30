@@ -224,6 +224,7 @@ export default function AddScreen() {
   };
 
   const previewUri = shots[shots.length - 1];
+  const hasShots = count > 0;
 
   return (
     <Screen edges={['top']}>
@@ -234,10 +235,12 @@ export default function AddScreen() {
             {eventName}
           </Display>
         </View>
-        <Text style={styles.counter}>
-          {count}
-          <Text style={styles.counterTotal}>/{CAP}</Text>
-        </Text>
+        <View style={styles.counterChip}>
+          <Text style={styles.counter}>
+            {count}
+            <Text style={styles.counterTotal}>/{CAP}</Text>
+          </Text>
+        </View>
       </View>
 
       {/* segmented control */}
@@ -250,7 +253,11 @@ export default function AddScreen() {
               onPress={() => setMode(m)}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              style={[styles.segBtn, active && styles.segBtnActive]}
+              style={({ pressed }) => [
+                styles.segBtn,
+                active && styles.segBtnActive,
+                pressed && !active && styles.segBtnPressed,
+              ]}
             >
               <Ionicons
                 name={m === 'camera' ? 'camera' : 'images'}
@@ -269,8 +276,8 @@ export default function AddScreen() {
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
       >
-        {/* ---- CAMERA MODE ---- */}
-        {mode === 'camera' && (
+        {/* ---- THE STAGE (hero) ---- */}
+        {mode === 'camera' ? (
           <CameraStage
             permission={permission}
             requestPermission={requestPermission}
@@ -280,23 +287,26 @@ export default function AddScreen() {
             flash={flash}
             shooting={shooting}
             full={full}
+            count={count}
             onFlip={() =>
               setFacing((f) => (f === 'back' ? 'front' : 'back'))
             }
             onFlash={() => setFlash((f) => (f === 'off' ? 'on' : 'off'))}
             onShutter={takeShot}
           />
-        )}
-
-        {/* ---- LIBRARY MODE ---- */}
-        {mode === 'library' && (
+        ) : (
           <Pressable
-            style={styles.libDrop}
+            style={({ pressed }) => [
+              styles.libDrop,
+              pressed && !full && styles.libDropPressed,
+            ]}
             onPress={pickFromLibrary}
             accessibilityRole="button"
             accessibilityLabel="Pick photos from your library"
           >
-            <Ionicons name="images-outline" size={34} color={colors.lime} />
+            <View style={styles.libIconWrap}>
+              <Ionicons name="images-outline" size={28} color={colors.lime} />
+            </View>
             <Text style={styles.libTitle}>
               {full ? 'Roll is full' : 'Pick from your library'}
             </Text>
@@ -308,10 +318,18 @@ export default function AddScreen() {
           </Pressable>
         )}
 
-        {/* ---- FRAME + PREVIEW ---- */}
-        {count > 0 && previewUri ? (
-          <View style={styles.previewBlock}>
-            <Label style={{ marginBottom: 10 }}>Branded frame</Label>
+        {/* ---- REVIEW (secondary, after first shot) ---- */}
+        {hasShots && previewUri ? (
+          <View style={styles.review}>
+            <View style={styles.reviewHead}>
+              <Label>Review</Label>
+              <Text style={styles.reviewMeta} numberOfLines={1}>
+                {frame === 'None'
+                  ? 'No frame'
+                  : `${frame} frame baked in`}
+              </Text>
+            </View>
+
             <View style={styles.previewCard}>
               <EventFrame
                 uri={previewUri}
@@ -319,37 +337,37 @@ export default function AddScreen() {
                 variant={frame}
               />
             </View>
-            <Text style={styles.frameHint}>
-              {frame === 'None'
-                ? 'No frame baked. Shots upload as-is.'
-                : `${frame} frame baked into every shot.`}
-            </Text>
-          </View>
-        ) : null}
 
-        {/* queued thumbnails */}
-        {count > 0 ? (
-          <View style={styles.tray}>
-            {shots.map((uri) => (
-              <View key={uri} style={styles.thumbWrap}>
-                <Image source={{ uri }} style={styles.thumb} contentFit="cover" />
-                <Pressable
-                  style={styles.thumbX}
-                  onPress={() => removeShot(uri)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Remove this shot"
-                  hitSlop={8}
-                >
-                  <Ionicons name="close" size={14} color={colors.ink} />
-                </Pressable>
-              </View>
-            ))}
+            {/* frame chooser */}
+            <FramePicker value={frame} onChange={setFrame} />
+
+            {/* queued thumbnails */}
+            <View style={styles.tray}>
+              {shots.map((uri) => (
+                <View key={uri} style={styles.thumbWrap}>
+                  <Image
+                    source={{ uri }}
+                    style={styles.thumb}
+                    contentFit="cover"
+                  />
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.thumbX,
+                      pressed && styles.thumbXPressed,
+                    ]}
+                    onPress={() => removeShot(uri)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove this shot"
+                    hitSlop={8}
+                  >
+                    <Ionicons name="close" size={13} color={colors.ink} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
           </View>
         ) : null}
       </ScrollView>
-
-      {/* frame picker rail sits above the CTA so it is always reachable */}
-      {count > 0 ? <FramePicker value={frame} onChange={setFrame} /> : null}
 
       <View style={styles.footer}>
         {busy ? (
@@ -362,7 +380,12 @@ export default function AddScreen() {
             </Text>
           </View>
         ) : null}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <View style={styles.errorRow}>
+            <Ionicons name="alert-circle" size={15} color={colors.coral} />
+            <Text style={styles.error}>{error}</Text>
+          </View>
+        ) : null}
         <PillButton
           label={
             done
@@ -371,11 +394,20 @@ export default function AddScreen() {
                 ? `Add ${count} to the event`
                 : 'Add to the event'
           }
-          trailing={<Text style={{ color: colors.ink }}>{'↗'}</Text>}
+          trailing={
+            <Ionicons name="arrow-up" size={17} color={colors.ink} />
+          }
           loading={busy}
           disabled={count === 0}
           onPress={submit}
         />
+        {!hasShots && !busy ? (
+          <Text style={styles.footerHint}>
+            {mode === 'camera'
+              ? 'Tap the shutter to queue your first shot.'
+              : 'Pick a photo to get started.'}
+          </Text>
+        ) : null}
       </View>
 
       {/* Offscreen bake target: full-res frame rendered just before capture. */}
@@ -400,6 +432,7 @@ function CameraStage({
   flash,
   shooting,
   full,
+  count,
   onFlip,
   onFlash,
   onShutter,
@@ -412,6 +445,7 @@ function CameraStage({
   flash: FlashMode;
   shooting: boolean;
   full: boolean;
+  count: number;
   onFlip: () => void;
   onFlash: () => void;
   onShutter: () => void;
@@ -429,7 +463,9 @@ function CameraStage({
   if (!permission.granted) {
     return (
       <View style={[styles.cameraStage, styles.permWrap]}>
-        <Ionicons name="camera-outline" size={34} color={colors.lime} />
+        <View style={styles.libIconWrap}>
+          <Ionicons name="camera-outline" size={28} color={colors.lime} />
+        </View>
         <Text style={styles.permTitle}>Camera access</Text>
         <Text style={styles.permHint}>
           Allow the camera to shoot in-app, or use your library instead.
@@ -464,29 +500,43 @@ function CameraStage({
 
       {/* viewfinder corner ticks to echo the app motif */}
       <View style={[styles.tick, styles.tickTL]} pointerEvents="none" />
+      <View style={[styles.tick, styles.tickTR]} pointerEvents="none" />
+      <View style={[styles.tick, styles.tickBL]} pointerEvents="none" />
       <View style={[styles.tick, styles.tickBR]} pointerEvents="none" />
+
+      {/* REC pill, top-left */}
+      <View style={styles.recPill} pointerEvents="none">
+        <View style={styles.recDot} />
+        <Text style={styles.recText}>REC</Text>
+      </View>
 
       {/* top controls */}
       <View style={styles.camTop}>
         <Pressable
-          style={styles.camCtrl}
+          style={({ pressed }) => [
+            styles.camCtrl,
+            pressed && styles.camCtrlPressed,
+          ]}
           onPress={onFlash}
           accessibilityRole="button"
           accessibilityLabel={flash === 'on' ? 'Flash on' : 'Flash off'}
         >
           <Ionicons
             name={flash === 'on' ? 'flash' : 'flash-off'}
-            size={20}
+            size={19}
             color={flash === 'on' ? colors.lime : colors.text}
           />
         </Pressable>
         <Pressable
-          style={styles.camCtrl}
+          style={({ pressed }) => [
+            styles.camCtrl,
+            pressed && styles.camCtrlPressed,
+          ]}
           onPress={onFlip}
           accessibilityRole="button"
           accessibilityLabel="Flip camera"
         >
-          <Ionicons name="camera-reverse" size={20} color={colors.text} />
+          <Ionicons name="camera-reverse" size={19} color={colors.text} />
         </Pressable>
       </View>
 
@@ -500,7 +550,7 @@ function CameraStage({
           style={({ pressed }) => [
             styles.shutter,
             (shooting || full) && styles.shutterInert,
-            pressed && styles.shutterPressed,
+            pressed && !(shooting || full) && styles.shutterPressed,
           ]}
         >
           <View style={styles.shutterInner}>
@@ -509,6 +559,8 @@ function CameraStage({
         </Pressable>
         {full ? (
           <Text style={styles.fullHint}>Roll is full</Text>
+        ) : count > 0 ? (
+          <Text style={styles.fullHint}>{count} queued</Text>
         ) : null}
       </View>
     </View>
@@ -520,20 +572,28 @@ const STAGE_RADIUS = radius.xl;
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingTop: 8,
     gap: 12,
   },
-  counter: { fontFamily: fonts.display, fontSize: 30, color: colors.lime },
-  counterTotal: { fontSize: 18, color: colors.textGhost },
+  counterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.fill,
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
+  },
+  counter: { fontFamily: fonts.display, fontSize: 20, color: colors.lime },
+  counterTotal: { fontSize: 14, color: colors.textGhost },
 
   segment: {
     flexDirection: 'row',
     gap: 6,
     marginHorizontal: 20,
-    marginTop: 14,
+    marginTop: 16,
     padding: 4,
     borderRadius: radius.pill,
     backgroundColor: colors.fillStrong,
@@ -548,10 +608,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   segBtnActive: { backgroundColor: colors.lime },
+  segBtnPressed: { backgroundColor: colors.fill },
   segText: { fontFamily: fonts.bodySemibold, fontSize: 14, color: colors.text },
   segTextActive: { color: colors.ink },
 
-  body: { padding: 20, paddingBottom: 16, gap: 18 },
+  body: { padding: 20, paddingBottom: 20, gap: 22 },
 
   cameraStage: {
     width: '100%',
@@ -567,13 +628,43 @@ const styles = StyleSheet.create({
   },
   tick: {
     position: 'absolute',
-    width: 28,
-    height: 28,
-    borderColor: colors.lime,
+    width: 26,
+    height: 26,
+    borderColor: 'rgba(215,255,62,0.85)',
     zIndex: 4,
   },
   tickTL: { top: 14, left: 14, borderTopWidth: 2, borderLeftWidth: 2 },
+  tickTR: { top: 14, right: 14, borderTopWidth: 2, borderRightWidth: 2 },
+  tickBL: { bottom: 14, left: 14, borderBottomWidth: 2, borderLeftWidth: 2 },
   tickBR: { bottom: 14, right: 14, borderBottomWidth: 2, borderRightWidth: 2 },
+
+  recPill: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(5,5,5,0.55)',
+    borderWidth: 1,
+    borderColor: colors.hairlineStrong,
+    zIndex: 5,
+  },
+  recDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+    backgroundColor: colors.coral,
+  },
+  recText: {
+    fontFamily: fonts.displayMedium,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.text,
+  },
 
   camTop: {
     position: 'absolute',
@@ -593,6 +684,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hairlineStrong,
   },
+  camCtrlPressed: { transform: [{ scale: 0.92 }], opacity: 0.85 },
   shutterWrap: {
     position: 'absolute',
     bottom: 22,
@@ -600,13 +692,14 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   shutter: {
-    width: 76,
-    height: 76,
+    width: 78,
+    height: 78,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'rgba(5,5,5,0.25)',
   },
   shutterInner: {
     width: 60,
@@ -616,10 +709,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shutterPressed: { transform: [{ scale: 0.94 }] },
+  shutterPressed: { transform: [{ scale: 0.96 }] },
   shutterInert: { opacity: 0.5 },
   fullHint: {
-    marginTop: 8,
+    marginTop: 10,
     fontFamily: fonts.bodyMedium,
     fontSize: 12,
     color: colors.text,
@@ -635,7 +728,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: 18,
     color: colors.text,
-    marginTop: 6,
+    marginTop: 10,
   },
   permHint: {
     fontFamily: fonts.body,
@@ -643,8 +736,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 6,
+    lineHeight: 19,
   },
-  permBtns: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  permBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
 
   libDrop: {
     width: '100%',
@@ -659,38 +753,59 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 24,
   },
+  libDropPressed: { backgroundColor: colors.fillStrong, transform: [{ scale: 0.99 }] },
+  libIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(215,255,62,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(215,255,62,0.25)',
+  },
   libTitle: {
     fontFamily: fonts.display,
     fontSize: 18,
     color: colors.text,
-    marginTop: 6,
+    marginTop: 8,
   },
   libHint: { fontFamily: fonts.body, fontSize: 13, color: colors.textMuted },
 
-  previewBlock: { marginTop: 2 },
+  review: { gap: 16 },
+  reviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  reviewMeta: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.textMuted,
+    flexShrink: 1,
+    textAlign: 'right',
+  },
   previewCard: {
-    width: '100%',
+    width: '70%',
+    alignSelf: 'center',
     aspectRatio: 3 / 4,
-    borderRadius: STAGE_RADIUS,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.hairlineStrong,
   },
-  frameHint: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 10,
-  },
 
   tray: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   thumbWrap: { position: 'relative' },
   thumb: {
-    width: 64,
-    height: 64,
+    width: 58,
+    height: 58,
     borderRadius: radius.sm,
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.hairline,
   },
   thumbX: {
     position: 'absolute',
@@ -702,11 +817,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lime,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.ink,
   },
+  thumbXPressed: { transform: [{ scale: 0.9 }] },
 
   footer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 16,
     backgroundColor: colors.ink,
     borderTopWidth: 1,
@@ -716,14 +834,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   bakeText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 12,
+  },
   error: {
     color: colors.coral,
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    flex: 1,
+  },
+  footerHint: {
     fontFamily: fonts.body,
     fontSize: 12,
-    marginBottom: 10,
+    color: colors.textFaint,
+    textAlign: 'center',
+    marginTop: 10,
   },
 
   offscreen: {

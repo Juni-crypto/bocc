@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, label as labelStyle } from '@/theme/tokens';
 import { api, type EventPerson } from '@/lib/api';
 
@@ -56,6 +57,7 @@ export function PeopleStrip({
           accessibilityLabel="Find me with a selfie"
           style={({ pressed }) => [styles.findMe, pressed && styles.pressed]}
         >
+          <Ionicons name="sparkles" size={13} color={colors.lime} />
           <Text style={styles.findMeText}>Find me</Text>
         </Pressable>
       </View>
@@ -65,6 +67,10 @@ export function PeopleStrip({
           {Array.from({ length: 6 }).map((_, i) => (
             <Placeholder key={i} delay={i * 120} />
           ))}
+          <View style={styles.detectingTag}>
+            <View style={styles.detectingDot} />
+            <Text style={styles.detectingTagText}>Detecting people</Text>
+          </View>
         </View>
       ) : people.length ? (
         <ScrollView
@@ -97,20 +103,29 @@ export function PeopleStrip({
                     accessibilityElementsHidden
                   />
                 ) : (
-                  <View style={[styles.avatar, styles.avatarBlank]} />
+                  <View style={[styles.avatar, styles.avatarBlank]}>
+                    <Ionicons
+                      name="person"
+                      size={20}
+                      color={colors.textGhost}
+                    />
+                  </View>
                 )}
               </View>
               <Text style={styles.caption} numberOfLines={1}>
-                {p.name ?? `${p.photoCount}`}
+                {p.name ?? `${p.photoCount} ${p.photoCount === 1 ? 'shot' : 'shots'}`}
               </Text>
             </Pressable>
           ))}
         </ScrollView>
       ) : (
-        <Text style={styles.detecting}>
-          Detecting people... faces appear here automatically as photos are
-          processed.
-        </Text>
+        <View style={styles.detectingEmpty}>
+          <Ionicons name="scan-outline" size={18} color={colors.textFaint} />
+          <Text style={styles.detecting}>
+            Detecting people. Faces appear here automatically as photos are
+            processed.
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -141,8 +156,10 @@ function Placeholder({ delay }: { delay: number }) {
   return <Animated.View style={[styles.placeholder, { opacity }]} />;
 }
 
+const AVATAR = 58;
+
 const styles = StyleSheet.create({
-  wrap: { gap: 12 },
+  wrap: { gap: 14 },
   headRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -151,44 +168,89 @@ const styles = StyleSheet.create({
   },
   findMe: {
     minHeight: 36,
-    paddingHorizontal: 16,
-    borderRadius: 999,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(215,255,62,0.3)',
+    borderColor: 'rgba(215,255,62,0.30)',
     backgroundColor: 'rgba(215,255,62,0.08)',
   },
   findMeText: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.lime },
-  pressed: { opacity: 0.7 },
-  loadingRow: { flexDirection: 'row', gap: 12 },
+  pressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
+
+  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   placeholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: AVATAR,
+    height: AVATAR,
+    borderRadius: AVATAR / 2,
     backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  peopleRow: { gap: 16, paddingRight: 8 },
-  person: { width: 64, alignItems: 'center' },
-  avatarRing: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
     borderWidth: 1,
-    borderColor: colors.hairlineStrong,
+    borderColor: colors.hairlineSoft,
+  },
+  detectingTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: colors.fill,
+    borderWidth: 1,
+    borderColor: colors.hairlineSoft,
+  },
+  detectingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: colors.lime,
+  },
+  detectingTagText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  peopleRow: { gap: 16, paddingRight: 8, alignItems: 'flex-start' },
+  person: { width: AVATAR + 8, alignItems: 'center' },
+  avatarRing: {
+    width: AVATAR,
+    height: AVATAR,
+    borderRadius: AVATAR / 2,
+    padding: 2,
+    borderWidth: 1.5,
+    borderColor: 'rgba(215,255,62,0.35)',
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
   },
-  avatar: { width: '100%', height: '100%', borderRadius: 28 },
-  avatarBlank: { backgroundColor: 'rgba(255,255,255,0.1)' },
+  avatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: AVATAR / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarBlank: { backgroundColor: 'rgba(255,255,255,0.06)' },
   caption: {
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMedium,
     fontSize: 11,
     color: colors.textMuted,
-    marginTop: 6,
-    maxWidth: 64,
+    marginTop: 7,
+    maxWidth: AVATAR + 8,
     textAlign: 'center',
   },
+  detectingEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 4,
+  },
   detecting: {
+    flex: 1,
     fontFamily: fonts.body,
     fontSize: 12,
     color: colors.textFaint,

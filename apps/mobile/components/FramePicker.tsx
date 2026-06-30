@@ -35,7 +35,11 @@ export function FramePicker({
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
             accessibilityLabel={`${variant} frame`}
-            style={[styles.chip, active && styles.chipActive]}
+            style={({ pressed }) => [
+              styles.chip,
+              active && styles.chipActive,
+              pressed && !active && styles.chipPressed,
+            ]}
           >
             <Ionicons
               name={ICONS[variant]}
@@ -53,7 +57,7 @@ export function FramePicker({
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 8, paddingHorizontal: 20, paddingVertical: 4 },
+  row: { gap: 8, paddingVertical: 2, paddingRight: 8 },
   chip: {
     minHeight: 44,
     flexDirection: 'row',
@@ -66,6 +70,7 @@ const styles = StyleSheet.create({
     borderColor: colors.hairlineStrong,
   },
   chipActive: { backgroundColor: colors.lime, borderColor: colors.lime },
+  chipPressed: { backgroundColor: colors.fillStrong, transform: [{ scale: 0.97 }] },
   label: { fontFamily: fonts.bodySemibold, fontSize: 13, color: colors.text },
   labelActive: { color: colors.ink },
 });
